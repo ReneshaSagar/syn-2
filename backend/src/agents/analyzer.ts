@@ -41,7 +41,10 @@ export const analyzerAgent = {
         stakeholders: result.stakeholders || [],
         businessType: result.businessType || 'Unknown',
         competitors: result.competitors || [],
-        keyValueProposition: result.keyValueProposition || 'Unknown'
+        keyValueProposition: result.keyValueProposition || 'Unknown',
+        audienceComposition: result.audienceComposition || [],
+        experts: result.experts || [],
+        summary: result.summary || ''
       };
     } catch (error) {
       console.error('Error in analyzerAgent.analyzeIdea:', error);

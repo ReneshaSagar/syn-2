@@ -1,10 +1,10 @@
-import React from 'react';
-import type { Report, IdeaAnalysis, Persona, Simulation } from '../services/api';
+import React, { useMemo, useState, useEffect } from 'react';
+import type { Report, Persona, Simulation, RedTeamReport, Competitor, CommunityRecommendation, VersionSnapshot } from '../services/api';
 import { 
-  PieChart, Pie, Cell, ResponsiveContainer
+  PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, AlertTriangle, Lightbulb, MessageSquareQuote, MessageCircle, FileText, Wand2, Loader2, X } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin } from 'lucide-react';
 import { ChatDrawer } from './ChatDrawer';
 import { generateAsset, pivotIdea } from '../services/api';
 import ReactMarkdown from 'react-markdown';
@@ -14,47 +14,35 @@ interface ReportDashboardProps {
   analysis: any;
   personas: Persona[];
   simulations: Simulation[];
+  redTeamReport?: RedTeamReport | null;
+  competitors?: Competitor[];
+  communityRecommendations?: CommunityRecommendation[];
+  versionHistory?: VersionSnapshot[];
   onRestart: () => void;
   onPivotComplete?: (result: any) => void;
 }
 
-export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analysis, personas = [], simulations = [], onRestart, onPivotComplete }) => {
-  const [activeTab, setActiveTab] = React.useState<'summary' | 'detailed'>('summary');
-  const [selectedPersonaId, setSelectedPersonaId] = React.useState<string | null>(null);
-
-  // Chat State
-  const [isChatOpen, setIsChatOpen] = React.useState(false);
-  const [chatContext, setChatContext] = React.useState<{ type: 'persona' | 'general'; targetId?: string; personaName?: string }>();
-  const [initialChatMessage, setInitialChatMessage] = React.useState<string>('');
-
-  // Floating Cursor State
-  const [mousePos, setMousePos] = React.useState({ x: 0, y: 0 });
-  const [hoveredStat, setHoveredStat] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePos({ x: e.clientX, y: e.clientY });
-    };
-    if (hoveredStat) {
-      window.addEventListener('mousemove', handleMouseMove);
-    }
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [hoveredStat]);
-
-  const openChat = (type: 'persona' | 'general', targetId?: string, personaName?: string, message?: string) => {
-    setChatContext({ type, targetId, personaName });
-    if (message) {
-       setInitialChatMessage(`Sure! I'll help you explore: "${message}". What specifically would you like to know?`);
-    } else {
-       setInitialChatMessage('');
-    }
-    setIsChatOpen(true);
-  };
+export const ReportDashboard: React.FC<ReportDashboardProps> = ({ 
+  report, 
+  analysis, 
+  personas = [], 
+  simulations = [], 
+  redTeamReport,
+  competitors = [],
+  communityRecommendations = [],
+  versionHistory = [],
+  onRestart, 
+  onPivotComplete 
+}) => {
+  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validate' | 'versions'>('overview');
+  const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
+  const [competitorFilter, setCompetitorFilter] = useState('All');
+  const [expandedCompetitor, setExpandedCompetitor] = useState<string | null>(null);
 
   // Asset Generation State
-  const [assetTarget, setAssetTarget] = React.useState<string | null>(null);
-  const [assetMarkdown, setAssetMarkdown] = React.useState<string | null>(null);
-  const [isGeneratingAsset, setIsGeneratingAsset] = React.useState(false);
+  const [assetTarget, setAssetTarget] = useState<string | null>(null);
+  const [assetMarkdown, setAssetMarkdown] = useState<string | null>(null);
+  const [isGeneratingAsset, setIsGeneratingAsset] = useState(false);
 
   const handleGenerateAsset = async (targetText: string) => {
     setAssetTarget(targetText);
@@ -70,10 +58,32 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
     }
   };
 
-  // Pivot State
-  const [isPivotModalOpen, setIsPivotModalOpen] = React.useState(false);
-  const [pivotInstruction, setPivotInstruction] = React.useState('');
-  const [isPivoting, setIsPivoting] = React.useState(false);
+  useEffect(() => {
+    // Suppress unused warnings
+    if (false) console.log(assetTarget, assetMarkdown, isGeneratingAsset, handleGenerateAsset);
+  }, [assetTarget, assetMarkdown, isGeneratingAsset, handleGenerateAsset]);
+
+  // Chat State
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatContext, setChatContext] = useState<{ type: 'persona' | 'general'; targetId?: string; personaName?: string }>();
+  const [initialChatMessage, setInitialChatMessage] = useState<string>('');
+
+  // Floating Cursor State is disabled for now
+
+  const openChat = (type: 'persona' | 'general', targetId?: string, personaName?: string, message?: string) => {
+    setChatContext({ type, targetId, personaName });
+    if (message) {
+       setInitialChatMessage(`Sure! I'll help you explore: "${message}". What specifically would you like to know?`);
+    } else {
+       setInitialChatMessage('');
+    }
+    setIsChatOpen(true);
+  };
+
+  // Asset Generation State
+  const [isPivotModalOpen, setIsPivotModalOpen] = useState(false);
+  const [pivotInstruction, setPivotInstruction] = useState('');
+  const [isPivoting, setIsPivoting] = useState(false);
 
   const handlePivot = async () => {
     if (!pivotInstruction.trim() || !onPivotComplete) return;
@@ -111,7 +121,6 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
   };
 
   let interestScore = report.insights?.overallInterestScore || 0;
-  // If LLM returned a scale of 1-10 instead of a percentage, convert it
   if (interestScore > 0 && interestScore <= 10) {
     interestScore *= 10;
   }
@@ -120,14 +129,76 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
     { name: 'Interest', value: interestScore },
     { name: 'Remaining', value: 100 - interestScore }
   ];
-  const COLORS = ['#3b82f6', '#f1f5f9']; // Soft blue and very light slate
+  const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899', '#f43f5e'];
+
+  const hypeUtilityStats = useMemo(() => {
+    if (!report?.insights?.segmentBreakdown?.length) return { hype: 50, utility: 50, rawHype: 0, rawUtility: 0 };
+    
+    let totalExcitement = 0;
+    let totalInterest = 0;
+    report.insights.segmentBreakdown.forEach(s => {
+      totalExcitement += (s.avgExcitement || 0);
+      totalInterest += (s.avgInterest || 0);
+    });
+    
+    const segments = report.insights.segmentBreakdown.length;
+    const avgEx = (totalExcitement / segments) * 10;
+    const avgIn = (totalInterest / segments) * 10;
+    
+    const total = avgEx + avgIn;
+    if (total === 0) return { hype: 50, utility: 50, rawHype: 0, rawUtility: 0 };
+    
+    return {
+      hype: Math.round((avgEx / total) * 100),
+      utility: Math.round((avgIn / total) * 100),
+      rawHype: Math.round(avgEx),
+      rawUtility: Math.round(avgIn)
+    };
+  }, [report]);
+
+  const getRiskColor = (level?: string) => {
+    switch(level?.toLowerCase()) {
+      case 'critical': return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800';
+      case 'high': return 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200 dark:border-orange-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800';
+      case 'low': return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800';
+      default: return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700';
+    }
+  };
+
+  const getBadgeStyle = (type: 'SIMULATED' | 'RESEARCHED' | 'ANALYZED') => {
+    switch (type) {
+      case 'SIMULATED': return 'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400 border-purple-200 dark:border-purple-800';
+      case 'RESEARCHED': return 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 border-blue-200 dark:border-blue-800';
+      case 'ANALYZED': return 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800';
+    }
+  };
+
+  const Badge = ({ type }: { type: 'SIMULATED' | 'RESEARCHED' | 'ANALYZED' }) => (
+    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-wider border ${getBadgeStyle(type)} flex items-center gap-1 w-fit`}>
+      {type === 'SIMULATED' && <Activity className="w-3 h-3" />}
+      {type === 'RESEARCHED' && <BookOpen className="w-3 h-3" />}
+      {type === 'ANALYZED' && <Target className="w-3 h-3" />}
+      {type}
+    </span>
+  );
+
+  const personasBySegment = useMemo(() => {
+    const grouped: Record<string, typeof personas> = {};
+    personas.forEach(p => {
+      const segment = p.segment || 'Other';
+      if (!grouped[segment]) grouped[segment] = [];
+      grouped[segment].push(p);
+    });
+    return grouped;
+  }, [personas]);
 
   return (
-    <div className="min-h-screen p-8 bg-framer-bg dark:bg-[#050505] text-framer-text dark:text-white selection:bg-blue-100 dark:selection:bg-blue-900/50 selection:text-blue-900 dark:selection:text-blue-100 font-['Outfit'] transition-colors duration-500">
-      <div className="max-w-6xl mx-auto space-y-12 pt-12">
+    <div className="min-h-screen p-8 bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-gray-100 selection:bg-blue-100 dark:selection:bg-blue-900/50 selection:text-blue-900 dark:selection:text-blue-100 font-['Outfit'] transition-colors duration-500 pb-32">
+      <div className="max-w-7xl mx-auto space-y-10 pt-8">
         
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6">
+        {/* Header Section */}
+        <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6">
           <div className="space-y-4">
             <div className="inline-flex items-center gap-2 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-widest border border-green-100 dark:border-green-900/50 transition-colors duration-500">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
@@ -140,23 +211,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
               Market reaction based on <span className="font-medium text-gray-800 dark:text-gray-200">{analysis?.industry || 'target'}</span> synthetic segment.
             </p>
           </div>
-          <div className="flex flex-col xl:flex-row gap-4 items-end xl:items-center">
-            <div className="flex bg-gray-100 dark:bg-[#111] p-1 rounded-full border border-gray-200 dark:border-[#333]">
-              <button 
-                onClick={() => setActiveTab('summary')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${activeTab === 'summary' ? 'bg-white dark:bg-[#222] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-              >
-                Executive Summary
-              </button>
-              <button 
-                onClick={() => setActiveTab('detailed')}
-                className={`px-6 py-3 rounded-full text-sm font-medium transition-all ${activeTab === 'detailed' ? 'bg-white dark:bg-[#222] shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'}`}
-              >
-                Detailed Insights
-              </button>
-            </div>
-            <div className="flex gap-4">
-              <button 
+          <div className="flex gap-4 items-center">
+             <button 
                 onClick={() => setIsPivotModalOpen(true)}
                 className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white px-6 py-3 rounded-full shadow-md font-medium text-sm transition-all transform hover:scale-105"
               >
@@ -168,384 +224,671 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
               >
                 New <ArrowRight className="w-4 h-4" />
               </button>
-            </div>
           </div>
         </div>
 
-        {activeTab === 'summary' ? (
-          <>
-            {/* Top Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
-          {/* Interest Score Chart */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ ease: [0.16, 1, 0.3, 1], duration: 0.8 }}
-            onMouseEnter={() => setHoveredStat(`Interest Score of ${interestScore}%`)}
-            onMouseLeave={() => setHoveredStat(null)}
-            onClick={() => openChat('general', undefined, undefined, `Explain the Interest Score of ${interestScore}%`)}
-            className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-framer dark:shadow-none hover:shadow-framer-hover transition-all rounded-[2.5rem] p-10 flex flex-col items-center justify-center relative cursor-pointer"
-          >
-            <h3 className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-widest font-semibold mb-6 w-full text-left transition-colors duration-500">Interest Score</h3>
-            <div className="w-48 h-48 relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={scoreData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={70}
-                    outerRadius={90}
-                    startAngle={90}
-                    endAngle={-270}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {scoreData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center flex-col">
-                <span className="text-5xl font-semibold text-gray-900 dark:text-white tracking-tight transition-colors duration-500">{interestScore}%</span>
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Most Interested Group */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, ease: [0.16, 1, 0.3, 1], duration: 0.8 }}
-            onMouseEnter={() => setHoveredStat(`Key Segment: ${report.insights?.mostInterestedSegment}`)}
-            onMouseLeave={() => setHoveredStat(null)}
-            onClick={() => openChat('general', undefined, undefined, `Tell me more about why the Key Segment is ${report.insights?.mostInterestedSegment}`)}
-            className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-framer dark:shadow-none hover:shadow-framer-hover transition-all rounded-[2.5rem] p-10 flex flex-col relative overflow-hidden cursor-pointer"
-          >
-             <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-500">
-                <CheckCircle2 className="w-6 h-6" />
-             </div>
-             <h3 className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-widest font-semibold mb-auto transition-colors duration-500">Key Segment</h3>
-             <p className="text-3xl font-medium text-gray-900 dark:text-white mt-8 leading-tight transition-colors duration-500">
-               {report.insights?.mostInterestedSegment || 'N/A'}
-             </p>
-          </motion.div>
-
-          {/* Top Concerns Summary */}
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, ease: [0.16, 1, 0.3, 1], duration: 0.8 }}
-            onMouseEnter={() => setHoveredStat(`Primary Friction: ${report.insights?.topConcerns?.[0]}`)}
-            onMouseLeave={() => setHoveredStat(null)}
-            onClick={() => openChat('general', undefined, undefined, `Tell me more about the Primary Friction: ${report.insights?.topConcerns?.[0]}`)}
-            className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-framer dark:shadow-none hover:shadow-framer-hover transition-all rounded-[2.5rem] p-10 flex flex-col relative overflow-hidden cursor-pointer"
-          >
-             <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-500">
-                <AlertTriangle className="w-6 h-6" />
-             </div>
-             <h3 className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-widest font-semibold mb-auto transition-colors duration-500">Primary Friction</h3>
-             <p className="text-2xl font-medium text-gray-900 dark:text-white mt-8 leading-tight line-clamp-3 transition-colors duration-500">
-               {report.insights?.topConcerns?.[0] || 'None identified'}
-             </p>
-          </motion.div>
-
+        {/* Tab Navigation */}
+        <div className="flex overflow-x-auto hide-scrollbar bg-white dark:bg-[#111] p-1.5 rounded-full border border-gray-200 dark:border-[#333] shadow-sm">
+          {[
+            { id: 'overview', label: 'Overview', icon: Activity },
+            { id: 'audience', label: 'Audience', icon: Users },
+            { id: 'redteam', label: 'Red Team', icon: ShieldAlert },
+            { id: 'competitors', label: 'Competitors', icon: Target },
+            { id: 'validate', label: 'Where to Validate', icon: ChevronRight },
+            { id: 'versions', label: 'Versions', icon: History }
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as any)}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                  isActive 
+                  ? 'bg-gray-900 text-white dark:bg-[#222] dark:text-white shadow-md' 
+                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            )
+          })}
         </div>
 
-        {/* Detailed Lists Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          
-          {/* Common Concerns */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3, duration: 1 }}
-            className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm dark:shadow-none hover:shadow-md transition-all rounded-[2.5rem] p-12"
-          >
-            <div className="flex items-center gap-4 mb-10">
-              <div className="p-3 bg-rose-50 dark:bg-rose-900/30 rounded-2xl text-rose-500 dark:text-rose-400 transition-colors duration-500">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight transition-colors duration-500">Key Objections</h3>
-            </div>
-            <ul className="space-y-6">
-              {(report.insights?.topConcerns || []).map((concern, idx) => (
-                <li key={idx} className="flex gap-5 text-gray-600 dark:text-gray-300 transition-colors duration-500 relative group pr-32">
-                  <span className="text-rose-400 dark:text-rose-500 font-medium mt-1">{(idx + 1).toString().padStart(2, '0')}</span>
-                  <span className="leading-relaxed text-lg font-light">{concern}</span>
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2">
-                    <button 
-                      onClick={() => openChat('general', undefined, undefined, concern)}
-                      className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-[#222] dark:hover:bg-[#333] text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-full"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" /> Know Why
-                    </button>
+        {/* TAB 1: OVERVIEW */}
+        {activeTab === 'overview' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Interest Score */}
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2rem] p-8 flex flex-col items-center justify-center relative">
+                <div className="absolute top-6 left-6"><Badge type="ANALYZED" /></div>
+                <h3 className="text-gray-500 dark:text-gray-400 text-sm uppercase tracking-widest font-semibold mb-4 text-center mt-6">Interest Score</h3>
+                <div className="w-40 h-40 relative">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={scoreData} cx="50%" cy="50%" innerRadius={55} outerRadius={75} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
+                          {scoreData.map((_, index) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-4xl font-semibold text-gray-900 dark:text-white">{interestScore}%</span>
                   </div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {/* Suggested Improvements */}
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.4, duration: 1 }}
-            className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm dark:shadow-none hover:shadow-md transition-all rounded-[2.5rem] p-12"
-          >
-            <div className="flex items-center gap-4 mb-10">
-              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-2xl text-blue-500 dark:text-blue-400 transition-colors duration-500">
-                <Lightbulb className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight transition-colors duration-500">Recommendations</h3>
-            </div>
-            <ul className="space-y-6">
-              {(report.insights?.improvementRecommendations || []).map((improvement, idx) => (
-                <li key={idx} className="flex gap-5 text-gray-600 dark:text-gray-300 transition-colors duration-500 relative group pr-32">
-                  <span className="text-blue-500 dark:text-blue-400 mt-1">→</span>
-                  <span className="leading-relaxed text-lg font-light">{improvement}</span>
-                  <div className="absolute right-0 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-2">
-                    <button 
-                      onClick={() => openChat('general', undefined, undefined, improvement)}
-                      className="flex items-center gap-1.5 text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-[#222] dark:hover:bg-[#333] text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-full"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" /> Learn More
-                    </button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        </div>
-
-        {/* FAQs */}
-        {report.insights?.frequentlyAskedQuestions && report.insights.frequentlyAskedQuestions.length > 0 && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5, duration: 1 }}
-            className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-framer dark:shadow-none rounded-[3rem] p-12 transition-all duration-500"
-          >
-            <div className="flex items-center gap-4 mb-12">
-              <div className="p-3 bg-indigo-50 dark:bg-indigo-900/30 rounded-2xl text-indigo-500 dark:text-indigo-400 transition-colors duration-500">
-                <MessageSquareQuote className="w-6 h-6" />
-              </div>
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight transition-colors duration-500">Top Unanswered Questions</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-              {(report.insights?.frequentlyAskedQuestions || []).map((faq, idx) => (
-                <div key={idx} className="bg-gray-50 dark:bg-[#111] hover:bg-gray-100 dark:hover:bg-[#222] transition-colors duration-300 p-8 rounded-[2rem] relative group">
-                  <p className="text-gray-800 dark:text-gray-200 leading-relaxed font-medium transition-colors duration-500">{faq}</p>
-                  <button 
-                    onClick={() => openChat('general', undefined, undefined, faq)}
-                    className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center gap-1.5 text-xs font-semibold bg-white hover:bg-gray-50 dark:bg-[#222] dark:hover:bg-[#333] border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-full shadow-sm"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5" /> Ask How
-                  </button>
                 </div>
-              ))}
+              </div>
+
+              {/* Biggest Opportunity */}
+              <div className="bg-white dark:bg-[#0a0a0a] border border-emerald-100 dark:border-emerald-900/50 shadow-sm rounded-[2rem] p-8 flex flex-col relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-50 dark:bg-emerald-900/10 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110" />
+                 <div className="absolute top-6 right-6"><Badge type="ANALYZED" /></div>
+                 <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-2xl flex items-center justify-center mb-6">
+                    <TrendingUp className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-emerald-600 dark:text-emerald-400 text-sm uppercase tracking-widest font-semibold mb-2">Biggest Opportunity</h3>
+                 <p className="text-xl font-medium text-gray-900 dark:text-white leading-tight">
+                   {report.insights?.mostInterestedSegment || 'General Market'}
+                 </p>
+                 <p className="text-gray-500 dark:text-gray-400 mt-4 text-sm">Key segment showing the highest willingness to adopt.</p>
+              </div>
+
+              {/* Biggest Risk */}
+              <div className="bg-white dark:bg-[#0a0a0a] border border-rose-100 dark:border-rose-900/50 shadow-sm rounded-[2rem] p-8 flex flex-col relative overflow-hidden group">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-rose-50 dark:bg-rose-900/10 rounded-bl-[100px] -z-10 transition-transform group-hover:scale-110" />
+                 <div className="absolute top-6 right-6"><Badge type="ANALYZED" /></div>
+                 <div className="w-12 h-12 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-2xl flex items-center justify-center mb-6">
+                    <TrendingDown className="w-6 h-6" />
+                 </div>
+                 <h3 className="text-rose-600 dark:text-rose-400 text-sm uppercase tracking-widest font-semibold mb-2">Biggest Risk</h3>
+                 <p className="text-xl font-medium text-gray-900 dark:text-white leading-tight line-clamp-3">
+                   {report.insights?.topConcerns?.[0] || 'Pricing Resistance'}
+                 </p>
+                 <p className="text-gray-500 dark:text-gray-400 mt-4 text-sm">Primary friction point for adoption.</p>
+              </div>
+            </div>
+
+            {/* Segment Breakdown */}
+            {report.insights?.segmentBreakdown && report.insights.segmentBreakdown.length > 0 && (
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2.5rem] p-10">
+                <div className="flex justify-between items-center mb-8">
+                  <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Segment Breakdown</h3>
+                  <Badge type="ANALYZED" />
+                </div>
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={report.insights.segmentBreakdown} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#333" />
+                      <XAxis type="number" domain={[0, 10]} stroke="#888" />
+                      <YAxis dataKey="segmentName" type="category" width={150} stroke="#888" />
+                      <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor: '#111', borderColor: '#333', borderRadius: '8px', color: '#fff'}} formatter={(value: number) => [(value || 0).toFixed(1) + ' / 10', 'Average Interest']} />
+                      <Bar dataKey="avgInterest" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Hype vs Utility Ratio */}
+            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2.5rem] p-10 relative overflow-hidden">
+              <div className="absolute top-8 right-10"><Badge type="ANALYZED" /></div>
+              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Hype vs. Utility</h3>
+              <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm max-w-2xl">
+                Does the audience react emotionally (Hype) or logically (Utility)? High utility ideas are often necessary tools, while high hype ideas are consumer products or trends.
+              </p>
+              
+              <div className="w-full h-8 bg-gray-100 dark:bg-[#222] rounded-full overflow-hidden flex shadow-inner relative">
+                <div 
+                  className="h-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center pl-4 transition-all duration-1000"
+                  style={{ width: `${hypeUtilityStats.hype}%` }}
+                >
+                  <span className="text-white text-xs font-bold shadow-sm">HYPE {hypeUtilityStats.hype}%</span>
+                </div>
+                <div 
+                  className="h-full bg-gradient-to-l from-blue-500 to-cyan-500 flex items-center justify-end pr-4 transition-all duration-1000"
+                  style={{ width: `${hypeUtilityStats.utility}%` }}
+                >
+                  <span className="text-white text-xs font-bold shadow-sm">UTILITY {hypeUtilityStats.utility}%</span>
+                </div>
+              </div>
+              <div className="flex justify-between mt-4 text-xs font-medium uppercase tracking-wider text-gray-400">
+                <span>Emotionally Driven</span>
+                <span>Logically Driven</span>
+              </div>
+            </div>
+
+            {/* Polarization Matrix */}
+            {report.insights?.segmentBreakdown && report.insights.segmentBreakdown.length > 0 && (
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2.5rem] p-10">
+                <div className="flex justify-between items-center mb-8">
+                  <div>
+                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Polarization Matrix</h3>
+                    <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">Visualizing "Tourists" (High Interest, Low Intent) vs. "Whales" (High Interest, High Intent).</p>
+                  </div>
+                  <Badge type="ANALYZED" />
+                </div>
+                <div className="h-80 w-full relative">
+                  {/* Quadrant backgrounds */}
+                  <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 p-10 pointer-events-none opacity-5 dark:opacity-10">
+                    <div className="border-r border-b border-gray-500 bg-red-500 rounded-tl-xl" />
+                    <div className="border-b border-gray-500 bg-yellow-500 rounded-tr-xl" />
+                    <div className="border-r border-gray-500 bg-gray-500 rounded-bl-xl" />
+                    <div className="bg-green-500 rounded-br-xl" />
+                  </div>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+                      <XAxis type="number" dataKey="avgInterest" name="Interest" domain={[0, 10]} label={{ value: 'Average Interest (0-10)', position: 'insideBottom', offset: -10, fill: '#888' }} stroke="#888" />
+                      <YAxis type="number" dataKey="wouldPayPercent" name="Willingness to Pay" domain={[0, 100]} label={{ value: 'Willingness to Pay (%)', angle: -90, position: 'insideLeft', offset: -5, fill: '#888' }} stroke="#888" />
+                      <ZAxis type="category" dataKey="segmentName" name="Segment" />
+                      <RechartsTooltip cursor={{strokeDasharray: '3 3'}} contentStyle={{backgroundColor: '#111', borderColor: '#333', borderRadius: '8px', color: '#fff'}} formatter={(value: number, name: string) => [name === 'Willingness to Pay' ? `${(value || 0).toFixed(1)}%` : (value || 0).toFixed(1), name]} />
+                      <Scatter data={report.insights.segmentBreakdown} fill="#8b5cf6">
+                        {report.insights.segmentBreakdown?.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Scatter>
+                    </ScatterChart>
+                  </ResponsiveContainer>
+                  {/* Quadrant Labels */}
+                  <span className="absolute top-4 right-6 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Whales</span>
+                  <span className="absolute bottom-6 right-6 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Tourists</span>
+                  <span className="absolute top-4 left-14 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Niche</span>
+                  <span className="absolute bottom-6 left-14 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Disinterested</span>
+                </div>
+              </div>
+            )}
+
+            {/* Actionable Roadmap */}
+            {report.insights?.actionableRoadmap && report.insights.actionableRoadmap.length > 0 && (() => {
+              const roadmap = report.insights.actionableRoadmap;
+              const chunkSize = 3;
+              const rows = [];
+              for (let i = 0; i < roadmap.length; i += chunkSize) {
+                rows.push(roadmap.slice(i, i + chunkSize).map((step, idx) => ({ step, originalIndex: i + idx })));
+              }
+
+              return (
+                <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2.5rem] p-10">
+                  <div className="flex justify-between items-center mb-10">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-2xl text-amber-500 dark:text-amber-400">
+                        <CheckCircle2 className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Actionable Roadmap</h3>
+                    </div>
+                    <Badge type="ANALYZED" />
+                  </div>
+                  
+                  <div className="flex flex-col items-center w-full gap-8">
+                    {rows?.map((row, rowIndex) => {
+                      const isEven = rowIndex % 2 === 0;
+                      const isLastRow = rowIndex === rows.length - 1;
+                      
+                      return (
+                        <React.Fragment key={rowIndex}>
+                          <div className={`flex w-full items-stretch justify-center gap-8 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
+                            {row?.map((item, colIndex) => {
+                              const isLastInRow = colIndex === row.length - 1;
+                              const isLastOverall = item.originalIndex === roadmap.length - 1;
+                              
+                              return (
+                                <React.Fragment key={item.originalIndex}>
+                                  <div className="flex-1 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#333] shadow-sm p-6 rounded-[2rem] relative overflow-hidden group min-h-[140px]">
+                                    <span className="text-4xl font-black text-gray-200 dark:text-[#222] absolute top-4 right-4 z-0 pointer-events-none">{item.originalIndex + 1}</span>
+                                    <p className="text-gray-800 dark:text-gray-200 font-medium relative z-10">{item.step}</p>
+                                  </div>
+                                  {!isLastInRow && !isLastOverall && (
+                                    <div className="flex items-center justify-center">
+                                      {isEven ? <ArrowRight className="w-6 h-6 text-amber-500" /> : <ArrowLeft className="w-6 h-6 text-amber-500" />}
+                                    </div>
+                                  )}
+                                </React.Fragment>
+                              );
+                            })}
+                            {Array.from({ length: 3 - row.length }).map((_, i) => (
+                               <React.Fragment key={`empty-${i}`}>
+                                 <div className="w-6 h-6 opacity-0" />
+                                 <div className="flex-1 opacity-0" />
+                               </React.Fragment>
+                            ))}
+                          </div>
+                          {!isLastRow && (
+                             <div className="flex w-full gap-8">
+                               {isEven ? (
+                                  <>
+                                    <div className="flex-1" />
+                                    <div className="w-6 h-6" />
+                                    <div className="flex-1" />
+                                    <div className="w-6 h-6" />
+                                    <div className="flex-1 flex justify-center"><ArrowDown className="w-6 h-6 text-amber-500" /></div>
+                                  </>
+                               ) : (
+                                  <>
+                                    <div className="flex-1 flex justify-center"><ArrowDown className="w-6 h-6 text-amber-500" /></div>
+                                    <div className="w-6 h-6" />
+                                    <div className="flex-1" />
+                                    <div className="w-6 h-6" />
+                                    <div className="flex-1" />
+                                  </>
+                               )}
+                             </div>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
+            <div className="flex justify-center mt-12 pb-12">
+              <button onClick={handleDownloadPDF} className="flex items-center gap-2 bg-gray-900 hover:bg-black dark:bg-white dark:hover:bg-gray-100 text-white dark:text-black px-8 py-4 rounded-full shadow-lg font-semibold transition-all">
+                <ArrowDown className="w-5 h-5" /> Download Report as PDF
+              </button>
             </div>
           </motion.div>
         )}
 
-        {/* Actionable Roadmap */}
-        {report.insights?.actionableRoadmap && report.insights.actionableRoadmap.length > 0 && (() => {
-          const roadmap = report.insights.actionableRoadmap;
-          const chunkSize = 3;
-          const rows = [];
-          for (let i = 0; i < roadmap.length; i += chunkSize) {
-            rows.push(roadmap.slice(i, i + chunkSize).map((step, idx) => ({ step, originalIndex: i + idx })));
-          }
-
-          return (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.6, duration: 1 }}
-              className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-framer dark:shadow-none rounded-[3rem] p-12 transition-all duration-500"
-            >
-              <div className="flex items-center gap-4 mb-12">
-                <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-2xl text-amber-500 dark:text-amber-400 transition-colors duration-500">
-                  <CheckCircle2 className="w-6 h-6" />
+        {/* TAB 2: AUDIENCE (Persona Explorer) */}
+        {activeTab === 'audience' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+            {Object.entries(personasBySegment).map(([segment, segmentPersonas]) => (
+              <div key={segment} className="space-y-6">
+                <div className="flex items-center gap-4 border-b border-gray-200 dark:border-[#333] pb-4">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{segment}</h2>
+                  <span className="bg-gray-100 dark:bg-[#222] text-gray-600 dark:text-gray-300 px-3 py-1 rounded-full text-sm font-semibold">{segmentPersonas.length} Personas</span>
+                  <div className="ml-auto"><Badge type="SIMULATED" /></div>
                 </div>
-                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white tracking-tight transition-colors duration-500">Actionable Roadmap</h3>
-              </div>
-              
-              <div className="flex flex-col items-center w-full gap-8">
-                {rows.map((row, rowIndex) => {
-                  const isEven = rowIndex % 2 === 0;
-                  const isLastRow = rowIndex === rows.length - 1;
-                  
-                  return (
-                    <React.Fragment key={rowIndex}>
-                      <div className={`flex w-full items-stretch justify-center gap-8 ${isEven ? 'flex-row' : 'flex-row-reverse'}`}>
-                        {row.map((item, colIndex) => {
-                          const isLastInRow = colIndex === row.length - 1;
-                          const isLastOverall = item.originalIndex === roadmap.length - 1;
-                          
-                          return (
-                            <React.Fragment key={item.originalIndex}>
-                              <div className="flex-1 bg-white dark:bg-[#050505] border border-gray-100 dark:border-[#222] shadow-sm hover:shadow-md transition-colors duration-300 p-8 rounded-[2rem] relative overflow-hidden group min-h-[160px]">
-                                <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 to-orange-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                                <span className="text-5xl font-black text-gray-100 dark:text-[#111] absolute top-4 right-4 z-0 pointer-events-none transition-colors duration-500">{item.originalIndex + 1}</span>
-                                <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium relative z-10 transition-colors duration-500 mt-4">{item.step}</p>
-                              </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {segmentPersonas?.map((persona) => {
+                    const sim = simulations.find(s => s?.personaId === persona?.id);
+                    const isSelected = selectedPersonaId === persona?.id;
+                    const hue = ((persona.name || '').length * 40) % 360;
+                    
+                    return (
+                      <div key={persona.id} className={`flex flex-col gap-4 transition-all duration-500 ${isSelected ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+                        <div 
+                          onClick={() => setSelectedPersonaId(isSelected ? null : persona.id)}
+                          className={`cursor-pointer bg-white dark:bg-[#0a0a0a] border ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-100 dark:border-[#222]'} shadow-sm hover:shadow-md rounded-[2rem] p-6 relative overflow-hidden`}
+                        >
+                          <div className="flex items-start gap-4">
+                            <div className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold shrink-0" style={{ backgroundColor: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 60%, 30%)` }}>
+                              {(persona.name || 'U').charAt(0)}
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="text-lg font-bold text-gray-900 dark:text-white">{persona.name}</h4>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{persona.role} • {persona.age} yrs</p>
                               
-                              {!isLastInRow && !isLastOverall && (
-                                <div className="flex items-center justify-center">
-                                  {isEven ? <ArrowRight className="w-8 h-8 text-amber-500" /> : <ArrowLeft className="w-8 h-8 text-amber-500" />}
+                              {sim?.result?.excitementScore !== undefined && (
+                                <div className="mt-3 flex gap-2">
+                                  <span className={`text-xs px-2 py-1 rounded-full font-bold ${sim.result.excitementScore >= 7 ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : sim.result.excitementScore >= 4 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                    Interest: {sim.result.excitementScore}/10
+                                  </span>
+                                  {persona.adoptionTendency && (
+                                    <span className="text-xs px-2 py-1 rounded-full font-bold bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                                      {persona.adoptionTendency}
+                                    </span>
+                                  )}
                                 </div>
                               )}
-                            </React.Fragment>
-                          );
-                        })}
-                        
-                        {/* Pad with empty divs so columns are equal width if row is incomplete */}
-                        {Array.from({ length: 3 - row.length }).map((_, i) => (
-                           <React.Fragment key={`empty-${i}`}>
-                             <div className="w-8 h-8 opacity-0 pointer-events-none" />
-                             <div className="flex-1 opacity-0 pointer-events-none" />
-                           </React.Fragment>
-                        ))}
-                      </div>
-                      
-                      {!isLastRow && (
-                         <div className="flex w-full gap-8">
-                           {isEven ? (
-                              <>
-                                <div className="flex-1" />
-                                <div className="w-8 h-8" />
-                                <div className="flex-1" />
-                                <div className="w-8 h-8" />
-                                <div className="flex-1 flex justify-center"><ArrowDown className="w-8 h-8 text-amber-500" /></div>
-                              </>
-                           ) : (
-                              <>
-                                <div className="flex-1 flex justify-center"><ArrowDown className="w-8 h-8 text-amber-500" /></div>
-                                <div className="w-8 h-8" />
-                                <div className="flex-1" />
-                                <div className="w-8 h-8" />
-                                <div className="flex-1" />
-                              </>
-                           )}
-                         </div>
-                      )}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            </motion.div>
-          );
-        })()}
-
-        <div className="flex justify-center mt-12 mb-8">
-          <button 
-            onClick={handleDownloadPDF}
-            className="flex items-center gap-2 bg-gradient-to-r from-gray-800 to-black hover:from-black hover:to-gray-900 dark:from-white dark:to-gray-200 dark:hover:from-gray-100 dark:hover:to-gray-300 text-white dark:text-black px-8 py-4 rounded-full shadow-lg font-semibold text-lg transition-all transform hover:scale-105"
-          >
-            <ArrowDown className="w-5 h-5" /> Download Report as PDF
-          </button>
-        </div>
-
-        </>
-        ) : (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-8"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(Array.isArray(personas) ? personas : []).map((persona, idx) => {
-                const sim = (Array.isArray(simulations) ? simulations : []).find(s => s?.personaId === persona?.id);
-                const pName = persona?.name || 'Unknown Persona';
-                const pRole = persona?.role || 'User';
-                const hue = (pName.length * 40) % 360;
-                const isSelected = selectedPersonaId === persona?.id;
-
-                return (
-                  <div key={persona?.id || idx} className={`flex flex-col gap-4 transition-all duration-500 ${isSelected ? 'md:col-span-2 lg:col-span-3' : ''}`}>
-                    <div 
-                      onClick={() => setSelectedPersonaId(isSelected ? null : persona?.id)}
-                      className={`cursor-pointer bg-white dark:bg-[#0a0a0a] border ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-100 dark:border-[#222]'} shadow-sm hover:shadow-md transition-all rounded-3xl p-6 flex flex-col items-center text-center relative overflow-hidden`}
-                    >
-                      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4 text-xl font-bold border-2 border-white dark:border-[#111] shadow-sm" style={{ backgroundColor: `hsl(${hue}, 70%, 90%)`, color: `hsl(${hue}, 60%, 30%)` }}>
-                        {pName.charAt(0)}
-                      </div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white">{pName}</h4>
-                      <span className="text-xs font-medium text-gray-500 bg-gray-100 dark:bg-[#222] px-3 py-1 rounded-full uppercase tracking-wider mt-2 mb-4">{pRole}</span>
-                      {sim?.result?.excitementScore !== undefined && (
-                        <div className="flex items-center gap-2">
-                           <span className="text-sm text-gray-500">Excitement:</span>
-                           <span className={`text-sm font-bold ${sim.result.excitementScore >= 7 ? 'text-green-500' : sim.result.excitementScore >= 4 ? 'text-amber-500' : 'text-rose-500'}`}>{sim.result.excitementScore}/10</span>
-                        </div>
-                      )}
-                    
-                      {/* Expanded Section inside the card */}
-                      <AnimatePresence>
-                        {isSelected && sim && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="mt-6 pt-6 border-t border-gray-100 dark:border-[#222] text-sm overflow-hidden text-left w-full"
-                          >
-                          <div className="space-y-6">
-                            <div>
-                              <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><MessageSquareQuote className="w-4 h-4 text-blue-500"/> First Reaction</h5>
-                              <p className="text-gray-700 dark:text-gray-300 italic">"{sim?.result?.reaction || 'No reaction available.'}"</p>
-                            </div>
-                            
-                            {sim.result?.concerns && sim.result.concerns.length > 0 && (
-                              <div>
-                                <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-rose-500"/> Core Concerns</h5>
-                                <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                                  {sim.result.concerns.map((c, i) => <li key={i}>{c}</li>)}
-                                </ul>
-                              </div>
-                            )}
-
-                            {sim.result?.objections && sim.result.objections.length > 0 && (
-                              <div className="relative group/section">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h5 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><AlertTriangle className="w-4 h-4 text-orange-500"/> Objections to buying</h5>
-                                </div>
-                                <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                                  {sim.result.objections.map((o, i) => <li key={i}>{o}</li>)}
-                                </ul>
-                              </div>
-                            )}
-                            
-                            {sim.result?.suggestions && sim.result.suggestions.length > 0 && (
-                              <div className="relative group/section">
-                                <div className="flex items-center justify-between mb-2">
-                                  <h5 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2"><Lightbulb className="w-4 h-4 text-amber-500"/> Suggestions</h5>
-                                </div>
-                                <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1">
-                                  {sim.result.suggestions.map((s, i) => <li key={i}>{s}</li>)}
-                                </ul>
-                              </div>
-                            )}
-
-                            {/* Global Persona Chat Button */}
-                            <div className="mt-8 flex justify-end border-t border-gray-100 dark:border-[#222] pt-6">
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); openChat('persona', persona?.id, pName); }} 
-                                className="text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm transition-colors"
-                              >
-                                <MessageCircle className="w-4 h-4" /> Talk to {pName}
-                              </button>
                             </div>
                           </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                          
+                          {!isSelected && persona.personalityTraits && (
+                            <div className="mt-4 flex flex-wrap gap-2">
+                              {persona.personalityTraits?.slice(0, 3).map((t: string, i: number) => (
+                                <span key={i} className="text-xs bg-gray-100 dark:bg-[#111] text-gray-600 dark:text-gray-400 px-2 py-1 rounded border border-gray-200 dark:border-[#333]">{t}</span>
+                              ))}
+                              {persona.personalityTraits.length > 3 && <span className="text-xs text-gray-400 px-1 py-1">+{persona.personalityTraits.length - 3} more</span>}
+                            </div>
+                          )}
+
+                          <AnimatePresence>
+                            {isSelected && sim && (
+                              <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-6 pt-6 border-t border-gray-100 dark:border-[#222] overflow-hidden">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                  <div className="space-y-6">
+                                    <div>
+                                      <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><MessageSquareQuote className="w-4 h-4 text-blue-500"/> First Reaction</h5>
+                                      <p className="text-gray-700 dark:text-gray-300 italic bg-gray-50 dark:bg-[#111] p-4 rounded-xl border border-gray-100 dark:border-[#222]">"{sim.result?.reaction}"</p>
+                                    </div>
+                                    <div>
+                                      <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><ThumbsUp className="w-4 h-4 text-emerald-500"/> Main Attraction</h5>
+                                      <p className="text-gray-700 dark:text-gray-300">{sim.result?.mainAttraction || 'None'}</p>
+                                    </div>
+                                    <div>
+                                      <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><AlertOctagon className="w-4 h-4 text-rose-500"/> Main Concern</h5>
+                                      <p className="text-gray-700 dark:text-gray-300">{sim.result?.mainConcern || 'None'}</p>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="space-y-6">
+                                    {sim.result?.objections && sim.result.objections.length > 0 && (
+                                      <div>
+                                        <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Key Objections</h5>
+                                        <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1 text-sm">
+                                          {sim?.result?.objections?.map((o, i) => <li key={i}>{o}</li>)}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {sim.result?.questions && sim.result.questions.length > 0 && (
+                                      <div>
+                                        <h5 className="font-semibold text-gray-900 dark:text-white mb-2">Questions They Have</h5>
+                                        <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 space-y-1 text-sm">
+                                          {sim?.result?.questions?.map((q, i) => <li key={i}>{q}</li>)}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {sim.result?.whatWouldChangeTheirMind && (
+                                      <div>
+                                        <h5 className="font-semibold text-gray-900 dark:text-white mb-2 flex items-center gap-2"><Wand2 className="w-4 h-4 text-purple-500"/> What Would Change Their Mind?</h5>
+                                        <p className="text-gray-700 dark:text-gray-300 text-sm">{sim.result.whatWouldChangeTheirMind}</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                <div className="mt-8 flex justify-end border-t border-gray-100 dark:border-[#222] pt-6">
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); openChat('persona', persona.id, persona.name); }} 
+                                    className="text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-full flex items-center gap-2 shadow-sm transition-colors"
+                                  >
+                                    <MessageCircle className="w-4 h-4" /> Talk to {persona.name}
+                                  </button>
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        )}
+
+        {/* TAB 3: RED TEAM */}
+        {activeTab === 'redteam' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            {!redTeamReport ? (
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-12 text-center">
+                <ShieldAlert className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Red Team Analysis Not Available</h3>
+                <p className="text-gray-500 mt-2">Run a full red team analysis to see adversarial feedback.</p>
+              </div>
+            ) : (
+              <>
+                <div className={`border rounded-[2.5rem] p-8 md:p-12 ${getRiskColor(redTeamReport.overallRiskLevel)} shadow-sm relative overflow-hidden`}>
+                  <div className="absolute top-6 right-6"><Badge type="ANALYZED" /></div>
+                  <div className="flex flex-col md:flex-row gap-8 items-start md:items-center">
+                    <div className="bg-white/50 dark:bg-black/20 p-6 rounded-3xl shrink-0 backdrop-blur-sm">
+                      <Shield className="w-16 h-16" />
+                    </div>
+                    <div>
+                      <h2 className="text-sm font-bold uppercase tracking-widest mb-2 opacity-80">Overall Risk Level</h2>
+                      <p className="text-4xl md:text-5xl font-black mb-4 capitalize">{redTeamReport.overallRiskLevel}</p>
+                      <p className="text-lg font-medium opacity-90 leading-relaxed max-w-3xl">{redTeamReport.summary}</p>
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Assumptions */}
+                  <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm">
+                    <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                      <HelpCircle className="w-6 h-6 text-purple-500" /> Hidden Assumptions
+                    </h3>
+                    <div className="space-y-4">
+                      {redTeamReport?.hiddenAssumptions?.map((assump: any, i: number) => (
+                        <div key={i} className="p-4 bg-gray-50 dark:bg-[#111] rounded-2xl border border-gray-200 dark:border-[#333]">
+                          <div className="flex justify-between items-start mb-2">
+                            <h4 className="font-semibold text-gray-900 dark:text-white">{assump.assumption}</h4>
+                            <span className={`text-[10px] px-2 py-1 rounded-full font-bold uppercase ${getRiskColor(assump.severity)}`}>{assump.severity}</span>
+                          </div>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">{assump.evidence}</p>
+                          <div className="text-sm bg-purple-50 text-purple-800 dark:bg-purple-900/20 dark:text-purple-300 p-3 rounded-xl">
+                            <strong>Fix:</strong> {assump.recommendation}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Barriers & Flaws */}
+                  <div className="space-y-8">
+                    <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                        <AlertOctagon className="w-5 h-5 text-rose-500" /> Adoption Barriers
+                      </h3>
+                      <ul className="space-y-3">
+                        {redTeamReport?.adoptionBarriers?.map((b: string, i: number) => (
+                          <li key={i} className="flex gap-3 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] p-3 rounded-xl">
+                            <span className="text-rose-500 font-bold">•</span> {b}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm">
+                      <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-3">
+                        <ShieldAlert className="w-5 h-5 text-amber-500" /> Contradictions
+                      </h3>
+                      <ul className="space-y-3">
+                        {redTeamReport?.contradictionsBetweenPersonas?.map((c: string, i: number) => (
+                          <li key={i} className="flex gap-3 text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-[#111] p-3 rounded-xl">
+                            <span className="text-amber-500 font-bold">•</span> {c}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+
+        {/* TAB 4: COMPETITORS */}
+        {activeTab === 'competitors' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+             {!competitors || competitors.length === 0 ? (
+                <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-12 text-center">
+                  <Crosshair className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" />
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Competitive Landscape Not Available</h3>
+                  <p className="text-gray-500 mt-2">Run competitor analysis to populate this section.</p>
+                </div>
+             ) : (
+               <>
+                 <div className="flex flex-wrap gap-2 items-center">
+                   <span className="text-sm font-semibold text-gray-500 mr-2">Filter:</span>
+                   {['All', 'Direct', 'Indirect', 'Alternative', 'Adjacent'].map(cat => (
+                     <button
+                       key={cat}
+                       onClick={() => setCompetitorFilter(cat)}
+                       className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${competitorFilter === cat ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-white text-gray-600 dark:bg-[#111] dark:text-gray-300 border border-gray-200 dark:border-[#333]'}`}
+                     >
+                       {cat}
+                     </button>
+                   ))}
+                 </div>
+
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   {(competitors || []).filter(c => competitorFilter === 'All' || c.category === competitorFilter).map((comp, idx) => (
+                     <div key={idx} className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-6 shadow-sm flex flex-col relative overflow-hidden">
+                       <div className="absolute top-6 right-6 flex gap-2">
+                         <Badge type={comp.source === 'researched' ? 'RESEARCHED' : 'ANALYZED'} />
+                       </div>
+                       
+                       <div className="flex items-center gap-4 mb-4">
+                         <div className="w-12 h-12 bg-gray-100 dark:bg-[#222] rounded-xl flex items-center justify-center">
+                           <Building className="w-6 h-6 text-gray-500" />
+                         </div>
+                         <div>
+                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">{comp.name}</h3>
+                           <div className="flex gap-2 mt-1">
+                             <span className="text-xs bg-gray-100 dark:bg-[#111] text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded uppercase font-semibold">{comp.category}</span>
+                             <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${getRiskColor(comp.threatLevel)}`}>{comp.threatLevel} Threat</span>
+                           </div>
+                         </div>
+                       </div>
+                       
+                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">{comp.description}</p>
+                       
+                       <button 
+                         onClick={() => setExpandedCompetitor(expandedCompetitor === comp.name ? null : comp.name)}
+                         className="mt-auto text-sm font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline"
+                       >
+                         {expandedCompetitor === comp.name ? 'Show Less' : 'View Details'} <ArrowDown className={`w-4 h-4 transition-transform ${expandedCompetitor === comp.name ? 'rotate-180' : ''}`} />
+                       </button>
+
+                       <AnimatePresence>
+                         {expandedCompetitor === comp.name && (
+                           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="mt-4 pt-4 border-t border-gray-100 dark:border-[#222] text-sm overflow-hidden space-y-4">
+                             <div>
+                               <strong className="text-gray-900 dark:text-white">Target Audience:</strong> <span className="text-gray-600 dark:text-gray-400">{comp.targetAudience}</span>
+                             </div>
+                             <div>
+                               <strong className="text-gray-900 dark:text-white">Key Features:</strong>
+                               <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 mt-1">
+                                 {comp.keyFeatures?.map((f, i) => <li key={i}>{f}</li>)}
+                               </ul>
+                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                               <div>
+                                 <strong className="text-green-600 dark:text-green-400 flex items-center gap-1"><ThumbsUp className="w-3 h-3"/> Strengths</strong>
+                                 <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 mt-1">
+                                   {comp.strengths?.map((s, i) => <li key={i}>{s}</li>)}
+                                 </ul>
+                               </div>
+                               <div>
+                                 <strong className="text-red-600 dark:text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> Weaknesses</strong>
+                                 <ul className="list-disc list-inside text-gray-600 dark:text-gray-400 mt-1">
+                                   {comp.weaknesses?.map((w, i) => <li key={i}>{w}</li>)}
+                                 </ul>
+                               </div>
+                             </div>
+                             <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                               <strong className="text-blue-800 dark:text-blue-300">How we are different:</strong>
+                               <p className="text-blue-600 dark:text-blue-400 mt-1">{comp.differenceFromOurIdea}</p>
+                             </div>
+                           </motion.div>
+                         )}
+                       </AnimatePresence>
+                     </div>
+                   ))}
+                 </div>
+               </>
+             )}
+          </motion.div>
+        )}
+
+        {/* TAB 5: WHERE TO VALIDATE */}
+        {activeTab === 'validate' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            {!communityRecommendations || communityRecommendations.length === 0 ? (
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-12 text-center">
+                <MapPin className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Validation Channels Not Available</h3>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm">
+                   <div className="flex justify-between items-center mb-6">
+                     <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Top Validation Channels</h3>
+                     <Badge type="RESEARCHED" />
+                   </div>
+                   <div className="space-y-4">
+                     {[...(communityRecommendations || [])].sort((a,b) => b.relevanceScore - a.relevanceScore).map((rec, idx) => (
+                       <div key={idx} className={`p-6 rounded-2xl border ${idx === 0 ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-900/10 shadow-md ring-1 ring-blue-500/20' : 'border-gray-200 dark:border-[#333] bg-gray-50 dark:bg-[#111]'} flex flex-col md:flex-row gap-6 items-center`}>
+                         <div className="shrink-0 w-16 h-16 bg-white dark:bg-[#222] rounded-2xl flex items-center justify-center border border-gray-100 dark:border-[#333] shadow-sm font-bold text-xl text-blue-600">
+                           {rec.platform.charAt(0)}
+                         </div>
+                         <div className="flex-1 w-full">
+                           <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
+                             <h4 className="text-lg font-bold text-gray-900 dark:text-white">
+                               {rec.community} <span className="text-xs font-normal text-gray-500 bg-gray-200 dark:bg-[#333] px-2 py-0.5 rounded">{rec.platform}</span>
+                             </h4>
+                             <div className="flex items-center gap-2">
+                               <span className="text-xs font-bold text-gray-500 uppercase">Match Score</span>
+                               <div className="w-24 h-2 bg-gray-200 dark:bg-[#333] rounded-full overflow-hidden">
+                                 <div className="h-full bg-blue-500" style={{ width: `${rec.relevanceScore}%` }} />
+                               </div>
+                               <span className="text-sm font-bold text-gray-900 dark:text-white">{rec.relevanceScore}%</span>
+                             </div>
+                           </div>
+                           <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{rec.reason}</p>
+                           <div className="flex flex-wrap gap-2 mt-2">
+                             <span className="text-xs bg-white dark:bg-[#222] border border-gray-200 dark:border-[#444] px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">👥 {rec.audienceType}</span>
+                             <span className="text-xs bg-white dark:bg-[#222] border border-gray-200 dark:border-[#444] px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">💬 {rec.feedbackType} expected</span>
+                           </div>
+                         </div>
+                       </div>
+                     ))}
+                   </div>
+                </div>
+              </>
+            )}
+          </motion.div>
+        )}
+
+        {/* TAB 6: VERSIONS */}
+        {activeTab === 'versions' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
+            {!versionHistory || versionHistory.length <= 1 ? (
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-12 text-center">
+                <History className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Run a Pivot to see version comparison</h3>
+                <p className="text-gray-500 mt-2">Use the "Pivot Idea" button at the top to create a new version.</p>
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Version Comparison</h3>
+                </div>
+                
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr>
+                        <th className="p-4 border-b border-gray-200 dark:border-[#333] text-gray-500 font-semibold w-1/4">Metric</th>
+                        {versionHistory?.map((v, i) => (
+                          <th key={v.versionNumber} className="p-4 border-b border-gray-200 dark:border-[#333] text-gray-900 dark:text-white font-bold">
+                            Version {i + 1} {i === versionHistory.length - 1 ? '(Current)' : ''}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td className="p-4 border-b border-gray-100 dark:border-[#222] text-gray-600 dark:text-gray-400 font-medium">Description</td>
+                        {versionHistory?.map(v => (
+                          <td key={v.versionNumber} className="p-4 border-b border-gray-100 dark:border-[#222] text-sm text-gray-700 dark:text-gray-300">{v.ideaText.substring(0,100)}...</td>
+                        ))}
+                      </tr>
+                      <tr>
+                        <td className="p-4 border-b border-gray-100 dark:border-[#222] text-gray-600 dark:text-gray-400 font-medium">Interest Score</td>
+                        {versionHistory?.map((v, i) => {
+                          const prev = i > 0 ? versionHistory[i-1].overallInterest : v.overallInterest;
+                          const diff = v.overallInterest - prev;
+                          return (
+                            <td key={v.versionNumber} className="p-4 border-b border-gray-100 dark:border-[#222] text-lg font-bold text-gray-900 dark:text-white">
+                              {v.overallInterest}%
+                              {diff !== 0 && (
+                                <span className={`ml-2 text-xs px-2 py-1 rounded-full ${diff > 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {diff > 0 ? '+' : ''}{diff}%
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -567,25 +910,6 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
         context={chatContext}
         initialMessage={initialChatMessage}
       />
-
-      {/* Floating Mouse Cursor Button for Stats Grid */}
-      <AnimatePresence>
-        {hoveredStat && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: "spring", stiffness: 400, damping: 25 }}
-            className="fixed pointer-events-none z-50 flex items-center gap-2 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-full shadow-2xl"
-            style={{ 
-              left: mousePos.x + 15, 
-              top: mousePos.y + 15 
-            }}
-          >
-            <MessageCircle className="w-3.5 h-3.5" /> Know More
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Asset Generation Modal */}
       <AnimatePresence>
@@ -684,7 +1008,6 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({ report, analys
         )}
       </AnimatePresence>
 
-      {/* Hidden div to render raw markdown report for PDF export */}
       <div id="hidden-report-content" className="hidden">
         <ReactMarkdown>{report.fullReportMarkdown || '# Report Missing'}</ReactMarkdown>
       </div>

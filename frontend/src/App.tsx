@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { SimulationView } from './components/SimulationView';
 import { ReportDashboard } from './components/ReportDashboard';
@@ -6,7 +6,8 @@ import { ClarificationView } from './components/ClarificationView';
 import { Moon, Sun } from 'lucide-react';
 import { 
   analyzeIdea, generateAudience, simulate, generateReport, 
-  type IdeaAnalysis, type Persona, type Simulation, type Report 
+  type IdeaAnalysis, type Persona, type Simulation, type Report,
+  type RedTeamReport, type Competitor, type CommunityRecommendation, type VersionSnapshot
 } from './services/api';
 
 type AppState = 'landing' | 'clarification' | 'simulation' | 'report';
@@ -20,6 +21,10 @@ function App() {
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [report, setReport] = useState<Report | null>(null);
+  const [redTeamReport, setRedTeamReport] = useState<RedTeamReport | null>(null);
+  const [competitors, setCompetitors] = useState<Competitor[]>([]);
+  const [communityRecommendations, setCommunityRecommendations] = useState<CommunityRecommendation[]>([]);
+  const [versionHistory, setVersionHistory] = useState<VersionSnapshot[]>([]);
 
   const [originalIdea, setOriginalIdea] = useState('');
   const [clarificationQuestions, setClarificationQuestions] = useState<string[]>([]);
@@ -79,6 +84,9 @@ function App() {
       setSimStatus('done');
       const reportResult = await generateReport(ideaId);
       setReport(reportResult.report);
+      if (reportResult.redTeamReport) setRedTeamReport(reportResult.redTeamReport);
+      if (reportResult.competitors) setCompetitors(reportResult.competitors);
+      if (reportResult.communityRecommendations) setCommunityRecommendations(reportResult.communityRecommendations);
 
       // Wait a moment for users to see the "done" state and thoughts, then show report
       setTimeout(() => {
@@ -100,6 +108,10 @@ function App() {
     setPersonas([]);
     setSimulations([]);
     setReport(null);
+    setRedTeamReport(null);
+    setCompetitors([]);
+    setCommunityRecommendations([]);
+    setVersionHistory([]);
   };
 
   const handleClarificationSubmit = (answers: string) => {
@@ -144,12 +156,22 @@ function App() {
           analysis={analysis}
           personas={personas}
           simulations={simulations}
+          redTeamReport={redTeamReport}
+          competitors={competitors}
+          communityRecommendations={communityRecommendations}
+          versionHistory={versionHistory}
           onRestart={restart} 
           onPivotComplete={(result) => {
+            if (report) {
+              setVersionHistory(result.versionHistory || []);
+            }
             setAnalysis(result.analyzedIdea);
             setPersonas(result.personas);
             setSimulations(result.simulations);
             setReport(result.report);
+            if (result.redTeamReport) setRedTeamReport(result.redTeamReport);
+            if (result.competitors) setCompetitors(result.competitors);
+            if (result.communityRecommendations) setCommunityRecommendations(result.communityRecommendations);
           }}
         />
       )}

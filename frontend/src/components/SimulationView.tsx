@@ -1,7 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Persona, Simulation, IdeaAnalysis } from '../services/api';
-import { Loader2, Check, ChevronDown } from 'lucide-react';
+import { Loader2, Check } from 'lucide-react';
 
 interface SimulationViewProps {
   status: 'analyzing' | 'generating' | 'simulating' | 'done';
@@ -33,7 +33,7 @@ const AnalysisPhase: React.FC<{ status: string, analysis: IdeaAnalysis | null }>
 
         <div className="space-y-6 text-base">
           
-          {/* Step 1 */}
+          {/* Step 1 (Analyze) */}
           <div className="flex items-start gap-4">
             <div className="mt-1">
               {analysis ? (
@@ -44,26 +44,12 @@ const AnalysisPhase: React.FC<{ status: string, analysis: IdeaAnalysis | null }>
             </div>
             <div>
               <p className={`font-medium ${analysis ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'}`}>
-                Analyzing startup concept
+                Analyzing concept & target industry
               </p>
             </div>
           </div>
 
-          {/* Step 2 (Shown when analysis is done) */}
-          {analysis && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
-              <div className="mt-1">
-                 <Check className="w-5 h-5 text-gray-400" />
-              </div>
-              <div>
-                <p className="font-medium text-gray-500 dark:text-gray-400">
-                  Identifying target industry: <span className="text-gray-900 dark:text-white ml-1">{analysis.industry}</span>
-                </p>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 3 (Generation) */}
+          {/* Step 2 (Generate Audience) */}
           {(status === 'generating' || status === 'simulating' || status === 'done') && analysis && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
               <div className="mt-1">
@@ -75,7 +61,39 @@ const AnalysisPhase: React.FC<{ status: string, analysis: IdeaAnalysis | null }>
               </div>
               <div>
                 <p className={`font-medium ${status === 'generating' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                  Generating 20 distinct demographic profiles
+                  Synthesizing dynamic audience segments
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 3 (Simulate & Competitors) */}
+          {(status === 'simulating' || status === 'done') && analysis && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
+              <div className="mt-1">
+                {status === 'simulating' ? (
+                   <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+                ) : (
+                   <Check className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
+              <div>
+                <p className={`font-medium ${status === 'simulating' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                  Simulating reactions & gathering competitive intelligence
+                </p>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Step 4 (Insights, Red Team, Report) */}
+          {status === 'done' && analysis && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
+              <div className="mt-1">
+                <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-900 dark:text-white">
+                  Running Red Team analysis & compiling report
                 </p>
               </div>
             </motion.div>
@@ -133,8 +151,7 @@ const CanvasPhase: React.FC<{ personas: Persona[], simulations: Simulation[], st
       Matter.Bodies.rectangle(cw + 25, ch/2, 50, ch + 50, wallOptions) // right
     ];
     
-    // Persona bodies
-    const bodies = displayPersonas.map((p, i) => {
+    const bodies = displayPersonas.map(() => {
       const x = 50 + Math.random() * (cw - 100);
       const y = 50 + Math.random() * (ch - 100);
       return Matter.Bodies.circle(x, y, 24, {
@@ -215,7 +232,7 @@ const CanvasPhase: React.FC<{ personas: Persona[], simulations: Simulation[], st
           return (
             <div
               key={persona.id}
-              ref={el => nodesRef.current[idx] = el}
+              ref={el => { nodesRef.current[idx] = el; }}
               className="absolute top-[-24px] left-[-24px] z-10 group cursor-grab active:cursor-grabbing w-12 h-12"
             >
               {/* Agent Avatar */}

@@ -14,6 +14,15 @@ interface BatchSimulationItem {
   objections: string[];
   likelihoodToUse: number;
   suggestions: string[];
+  reactionEmoji: string;
+  interestScore: number;
+  sentiment: string;
+  wouldTry: boolean;
+  wouldPay: boolean;
+  mainAttraction: string;
+  mainConcern: string;
+  questions: string[];
+  whatWouldChangeTheirMind: string;
 }
 
 export const simulatorAgent = {
@@ -52,7 +61,16 @@ export const simulatorAgent = {
         concerns: ['Pricing model clarity', 'Onboarding effort'],
         objections: p.personalityTraits.includes('Skeptic') ? ['I already use existing alternatives'] : [],
         likelihoodToUse: p.personalityTraits.includes('Skeptic') ? 3 : 6,
-        suggestions: ['Offer a trial period', 'Provide better guides']
+        suggestions: ['Offer a trial period', 'Provide better guides'],
+        reactionEmoji: p.personalityTraits.includes('Skeptic') ? '🤔' : '👍',
+        interestScore: p.personalityTraits.includes('Skeptic') ? 4 : 7,
+        sentiment: p.personalityTraits.includes('Skeptic') ? 'neutral' : 'positive',
+        wouldTry: !p.personalityTraits.includes('Skeptic'),
+        wouldPay: false,
+        mainAttraction: 'The core concept is interesting.',
+        mainConcern: 'Pricing and onboarding might be tough.',
+        questions: ['How much does it cost?'],
+        whatWouldChangeTheirMind: 'A generous free tier.'
       }));
     }
   },
@@ -88,7 +106,16 @@ export const simulatorAgent = {
         concerns: match.concerns,
         objections: match.objections,
         likelihoodToUse: match.likelihoodToUse,
-        suggestions: match.suggestions
+        suggestions: match.suggestions,
+        reactionEmoji: match.reactionEmoji,
+        interestScore: match.interestScore,
+        sentiment: match.sentiment,
+        wouldTry: match.wouldTry,
+        wouldPay: match.wouldPay,
+        mainAttraction: match.mainAttraction,
+        mainConcern: match.mainConcern,
+        questions: match.questions,
+        whatWouldChangeTheirMind: match.whatWouldChangeTheirMind
       } : {
         // Safe ultimate fallback in case of ID hallucination or mismatched keys
         reaction: `As ${persona.name} (${persona.role}), I find the concept promising but need more clarity on user flows and integration.`,
@@ -96,7 +123,16 @@ export const simulatorAgent = {
         concerns: ['Usability concerns'],
         objections: [],
         likelihoodToUse: 5,
-        suggestions: ['Add integrations with standard tools']
+        suggestions: ['Add integrations with standard tools'],
+        reactionEmoji: '🤔',
+        interestScore: 6,
+        sentiment: 'neutral',
+        wouldTry: true,
+        wouldPay: false,
+        mainAttraction: 'Concept is promising.',
+        mainConcern: 'Usability concerns.',
+        questions: ['Does it integrate?'],
+        whatWouldChangeTheirMind: 'Clear integrations.'
       };
 
       return {

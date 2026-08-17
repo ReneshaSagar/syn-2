@@ -6,6 +6,8 @@ import { generatorAgent } from '../agents/generator';
 import { simulatorAgent } from '../agents/simulator';
 import { insightsAgent } from '../agents/insights';
 import { reporterAgent } from '../agents/reporter';
+import { redTeamAgent } from '../agents/redTeam';
+import { researchAgent } from '../agents/research';
 
 // Helper channel reducer - merges old state and new updates
 const stateReducer = (left: any, right: any) => {
@@ -24,7 +26,8 @@ async function analyzeIdeaNode(state: WorkflowState): Promise<Partial<WorkflowSt
 
   return {
     ideaId: savedIdea.id,
-    analyzedIdea: analysis
+    analyzedIdea: analysis,
+    audienceComposition: analysis.audienceComposition
   };
 }
 
@@ -59,18 +62,41 @@ async function simulateReactionsNode(state: WorkflowState): Promise<Partial<Work
   };
 }
 
+// competitorResearch node
+async function competitorResearchNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  console.log('--- NODE: competitorResearchNode ---');
+  if (!state.rawInput || !state.analyzedIdea) {
+    return { competitors: [], communityRecommendations: [] };
+  }
+  const result = await researchAgent.research(state.rawInput, state.analyzedIdea);
+  return {
+    competitors: result.competitors,
+    communityRecommendations: result.communityRecommendations
+  };
+}
+
 // 4. Insight Generation Node
 async function generateInsightsNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
   console.log('--- NODE: generateInsightsNode ---');
-  if (!state.rawInput || !state.simulations) {
-    throw new Error('Missing simulations for insight generation.');
+  if (!state.rawInput || !state.simulations || !state.personas) {
+    throw new Error('Missing simulations or personas for insight generation.');
   }
 
-  const insights = await insightsAgent.generateInsights(state.rawInput, state.simulations);
+  const insights = await insightsAgent.generateInsights(state.rawInput, state.simulations, state.personas);
 
   return {
     insights
   };
+}
+
+// redTeam node
+async function redTeamNode(state: WorkflowState): Promise<Partial<WorkflowState>> {
+  console.log('--- NODE: redTeamNode ---');
+  if (!state.rawInput || !state.personas || !state.simulations) {
+    return { redTeamReport: undefined };
+  }
+  const report = await redTeamAgent.analyze(state.rawInput, state.personas, state.simulations);
+  return { redTeamReport: report };
 }
 
 // 5. Report Generation Node
@@ -84,7 +110,10 @@ async function generateReportNode(state: WorkflowState): Promise<Partial<Workflo
     state.rawInput,
     state.personas,
     state.simulations,
-    state.insights
+    state.insights,
+    state.redTeamReport,
+    state.competitors,
+    state.communityRecommendations
   );
 
   const savedReport = await dbService.saveReport(state.ideaId, state.insights, reportMarkdown);
@@ -103,20 +132,30 @@ const workflow = new StateGraph<WorkflowState>({
     personas: { value: stateReducer, default: () => undefined },
     simulations: { value: stateReducer, default: () => undefined },
     insights: { value: stateReducer, default: () => undefined },
-    report: { value: stateReducer, default: () => undefined }
+    report: { value: stateReducer, default: () => undefined },
+    audienceComposition: { value: stateReducer, default: () => undefined },
+    segmentAnalysis: { value: stateReducer, default: () => undefined },
+    redTeamReport: { value: stateReducer, default: () => undefined },
+    competitors: { value: stateReducer, default: () => undefined },
+    communityRecommendations: { value: stateReducer, default: () => undefined },
+    mode: { value: stateReducer, default: () => undefined },
   }
 })
   .addNode('analyzeIdea', analyzeIdeaNode)
   .addNode('generateAudience', generateAudienceNode)
   .addNode('simulateReactions', simulateReactionsNode)
+  .addNode('competitorResearch', competitorResearchNode)
   .addNode('generateInsights', generateInsightsNode)
+  .addNode('redTeam', redTeamNode)
   .addNode('generateReport', generateReportNode)
   
   .addEdge(START, 'analyzeIdea')
   .addEdge('analyzeIdea', 'generateAudience')
   .addEdge('generateAudience', 'simulateReactions')
-  .addEdge('simulateReactions', 'generateInsights')
-  .addEdge('generateInsights', 'generateReport')
+  .addEdge('simulateReactions', 'competitorResearch')
+  .addEdge('competitorResearch', 'generateInsights')
+  .addEdge('generateInsights', 'redTeam')
+  .addEdge('redTeam', 'generateReport')
   .addEdge('generateReport', END);
 
 // Compile the LangGraph workflow

@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { dbService } from '../services/database';
 import { pivotAgent } from '../agents/pivot';
 import { compiledWorkflow } from '../langgraph/workflow';
+import { VersionSnapshot } from '../types';
 
 const router = Router();
 
@@ -31,6 +32,25 @@ router.post('/pivot', asyncHandler(async (req: Request, res: Response) => {
 
   console.log(`API: Pivoting idea ${ideaId}... Instruction: ${pivotInstruction}`);
   
+  // Snapshot the old state
+  const report = await dbService.getReport(ideaId);
+  const history = await dbService.getVersionHistory(ideaId);
+  const versionNumber = history.length + 1;
+
+  if (report) {
+    const oldSnapshot: VersionSnapshot = {
+      versionNumber,
+      ideaText: idea.rawText,
+      timestamp: new Date().toISOString(),
+      overallInterest: report.insights.overallInterestScore,
+      adoptionProbability: report.insights.adoptionProbability,
+      segmentBreakdown: report.insights.segmentBreakdown?.map((s: any) => ({ segment: s.segmentName, interest: s.avgInterest })) || [],
+      topConcerns: report.insights.topConcerns,
+      confidenceScore: report.insights.confidence?.score
+    };
+    await dbService.saveVersion(ideaId, oldSnapshot);
+  }
+
   // 1. Generate the new idea text
   const newIdeaText = await pivotAgent.generatePivotedIdea(idea.rawText, pivotInstruction);
   
@@ -41,6 +61,28 @@ router.post('/pivot', asyncHandler(async (req: Request, res: Response) => {
     rawInput: newIdeaText
   });
 
+  // Copy old history to new ideaId so it's inherited
+  const oldHistoryWithSnapshot = await dbService.getVersionHistory(ideaId);
+  for (const snap of oldHistoryWithSnapshot) {
+    await dbService.saveVersion(finalState.ideaId || ideaId, snap);
+  }
+
+  // Snapshot the new state
+  const newHistory = await dbService.getVersionHistory(finalState.ideaId || ideaId);
+  const newVersionNumber = newHistory.length + 1;
+
+  const newSnapshot: VersionSnapshot = {
+    versionNumber: newVersionNumber,
+    ideaText: newIdeaText,
+    timestamp: new Date().toISOString(),
+    overallInterest: finalState.insights?.overallInterestScore || 0,
+    adoptionProbability: finalState.insights?.adoptionProbability || 0,
+    segmentBreakdown: finalState.insights?.segmentBreakdown?.map((s: any) => ({ segment: s.segmentName, interest: s.avgInterest })) || [],
+    topConcerns: finalState.insights?.topConcerns || [],
+    confidenceScore: finalState.insights?.confidence?.score
+  };
+  await dbService.saveVersion(finalState.ideaId || ideaId, newSnapshot);
+
   return res.json({
     message: 'Idea successfully pivoted and simulated.',
     ideaId: finalState.ideaId,
@@ -49,7 +91,8 @@ router.post('/pivot', asyncHandler(async (req: Request, res: Response) => {
     personas: finalState.personas,
     simulations: finalState.simulations,
     insights: finalState.insights,
-    report: finalState.report
+    report: finalState.report,
+    versionHistory: await dbService.getVersionHistory(finalState.ideaId || ideaId)
   });
 }));
 

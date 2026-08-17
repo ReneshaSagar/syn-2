@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Idea, IdeaAnalysis, Persona, Simulation, SimulationResult, AggregateInsights, Report } from '../types';
+import { Idea, IdeaAnalysis, Persona, Simulation, SimulationResult, AggregateInsights, Report, VersionSnapshot } from '../types';
 import * as crypto from 'crypto';
 
 // In-Memory Fallback DB Store
@@ -8,6 +8,7 @@ class InMemoryDB {
   public personas: Map<string, Persona[]> = new Map(); // idea_id -> Persona[]
   public simulations: Map<string, Simulation[]> = new Map(); // idea_id -> Simulation[]
   public reports: Map<string, Report> = new Map(); // idea_id -> Report
+  public versions: Map<string, VersionSnapshot[]> = new Map();
 }
 
 const localStore = new InMemoryDB();
@@ -88,9 +89,9 @@ export const dbService = {
             businessType: data.business_type,
             competitors: data.competitors,
             keyValueProposition: data.key_value_proposition
-          },
+          } as any,
           createdAt: new Date(data.created_at)
-        };
+        } as any;
       }
       console.error('Supabase getIdea error:', error);
     }
@@ -134,7 +135,7 @@ export const dbService = {
           concerns: r.concerns,
           goals: r.goals,
           personalityTraits: r.personality_traits
-        }));
+        })) as any;
       }
       console.error('Supabase savePersonas error:', error);
       console.log('Falling back to local store for savePersonas');
@@ -171,7 +172,7 @@ export const dbService = {
           concerns: d.concerns,
           goals: d.goals,
           personalityTraits: d.personality_traits
-        }));
+        })) as any;
       }
       console.error('Supabase getPersonas error:', error);
     }
@@ -230,37 +231,32 @@ export const dbService = {
         .eq('idea_id', ideaId);
 
       if (!error && data) {
-        return data.map(d => {
-          const rawPersona = d.personas;
-          const persona: Persona | undefined = rawPersona ? {
-            id: rawPersona.id,
-            name: rawPersona.name,
-            age: rawPersona.age,
-            role: rawPersona.role,
-            experience: rawPersona.experience,
-            motivations: rawPersona.motivations,
-            frustrations: rawPersona.frustrations,
-            concerns: rawPersona.concerns,
-            goals: rawPersona.goals,
-            personalityTraits: rawPersona.personality_traits
-          } : undefined;
-
-          return {
-            id: d.id,
-            ideaId: d.idea_id,
-            personaId: d.persona_id,
-            persona,
-            result: {
-              reaction: d.reaction,
-              excitementScore: d.excitement_score,
-              concerns: d.concerns,
-              objections: d.objections,
-              likelihoodToUse: d.likelihood_to_use,
-              suggestions: d.suggestions
-            },
-            createdAt: new Date(d.created_at)
-          };
-        });
+        return data.map(d => ({
+          id: d.id,
+          ideaId: d.idea_id,
+          personaId: d.persona_id,
+          persona: (d.personas ? {
+            id: d.personas.id,
+            name: d.personas.name,
+            age: d.personas.age,
+            role: d.personas.role,
+            experience: d.personas.experience,
+            motivations: d.personas.motivations,
+            frustrations: d.personas.frustrations,
+            concerns: d.personas.concerns,
+            goals: d.personas.goals,
+            personalityTraits: d.personas.personality_traits
+          } : undefined) as any,
+          result: {
+            reaction: d.reaction,
+            excitementScore: d.excitement_score,
+            concerns: d.concerns,
+            objections: d.objections,
+            likelihoodToUse: d.likelihood_to_use,
+            suggestions: d.suggestions
+          } as any,
+          createdAt: new Date(d.created_at)
+        })) as any;
       }
       console.error('Supabase getSimulations error:', error);
     }
@@ -341,14 +337,31 @@ export const dbService = {
             frequentlyAskedQuestions: data.frequently_asked_questions,
             improvementRecommendations: data.improvement_opportunities,
             actionableRoadmap: data.actionable_roadmap || []
-          },
+          } as any,
           fullReportMarkdown: data.full_report_markdown,
           createdAt: new Date(data.created_at)
-        };
+        } as any;
       }
       console.error('Supabase getReport error:', error);
     }
 
     return localStore.reports.get(ideaId) || null;
+  },
+
+  /**
+   * Save a version snapshot
+   */
+  async saveVersion(ideaId: string, snapshot: VersionSnapshot): Promise<VersionSnapshot> {
+    const history = localStore.versions.get(ideaId) || [];
+    history.push(snapshot);
+    localStore.versions.set(ideaId, history);
+    return snapshot;
+  },
+
+  /**
+   * Get version history
+   */
+  async getVersionHistory(ideaId: string): Promise<VersionSnapshot[]> {
+    return localStore.versions.get(ideaId) || [];
   }
 };

@@ -1,5 +1,11 @@
 // TypeScript Types for Synthetic Audience
 
+export interface AudienceSegment {
+  name: string;
+  count: number;
+  description: string;
+}
+
 export interface IdeaAnalysis {
   needsMoreInfo?: boolean;
   clarificationQuestions?: string[];
@@ -9,6 +15,9 @@ export interface IdeaAnalysis {
   businessType: string;
   competitors: string[];
   keyValueProposition: string;
+  audienceComposition: AudienceSegment[];
+  experts: string[];
+  summary: string;
 }
 
 export interface Idea {
@@ -29,6 +38,17 @@ export interface Persona {
   concerns: string[];
   goals: string[];
   personalityTraits: string[];
+  segment: string;
+  location: string;
+  occupation: string;
+  technicalAbility: string;
+  priceSensitivity: string;
+  riskTolerance: string;
+  currentTools: string[];
+  existingAlternatives: string[];
+  painPoints: string[];
+  preferences: string[];
+  adoptionTendency: string;
 }
 
 export interface SimulationResult {
@@ -38,6 +58,15 @@ export interface SimulationResult {
   objections: string[];
   likelihoodToUse: number; // 1-10
   suggestions: string[];
+  reactionEmoji: string;
+  interestScore: number;
+  sentiment: string;
+  wouldTry: boolean;
+  wouldPay: boolean;
+  mainAttraction: string;
+  mainConcern: string;
+  questions: string[];
+  whatWouldChangeTheirMind: string;
 }
 
 export interface Simulation {
@@ -49,6 +78,69 @@ export interface Simulation {
   createdAt: Date;
 }
 
+export interface SegmentAnalysis {
+  segmentName: string;
+  personaCount: number;
+  avgInterest: number;
+  avgExcitement: number;
+  wouldTryPercent: number;
+  wouldPayPercent: number;
+  commonConcerns: string[];
+  positiveSignals: string[];
+  adoptionLikelihood: string;
+  keyDifferences: string[];
+}
+
+export interface RedTeamReport {
+  overallRiskLevel: string;
+  hiddenAssumptions: { assumption: string; severity: string; evidence: string; recommendation: string }[];
+  competitiveThreats: string[];
+  adoptionBarriers: string[];
+  pricingProblems: string[];
+  trustAndPrivacyConcerns: string[];
+  contradictionsBetweenPersonas: string[];
+  summary: string;
+}
+
+export interface Competitor {
+  name: string;
+  description: string;
+  targetAudience: string;
+  keyFeatures: string[];
+  strengths: string[];
+  weaknesses: string[];
+  differenceFromOurIdea: string;
+  threatLevel: string;
+  category: string;
+  source: string;
+}
+
+export interface CommunityRecommendation {
+  platform: string;
+  community: string;
+  relevanceScore: number;
+  reason: string;
+  audienceType: string;
+  feedbackType: string;
+  communityRules?: string;
+}
+
+export interface VersionSnapshot {
+  versionNumber: number;
+  ideaText: string;
+  timestamp: string;
+  overallInterest: number;
+  adoptionProbability: number;
+  segmentBreakdown: { segment: string; interest: number }[];
+  topConcerns: string[];
+  confidenceScore?: number;
+}
+
+export interface SimulationConfidence {
+  score: number;
+  highFactors: string[];
+  lowFactors: string[];
+}
 
 export interface AggregateInsights {
   overallInterestScore: number; // 1-100
@@ -60,6 +152,12 @@ export interface AggregateInsights {
   frequentlyAskedQuestions: string[];
   improvementRecommendations: string[];
   actionableRoadmap: string[];
+  positiveSignals: string[];
+  biggestOpportunity: string;
+  biggestRisk: string;
+  importantAssumptions: string[];
+  segmentBreakdown: SegmentAnalysis[];
+  confidence: SimulationConfidence;
 }
 
 export interface Report {
@@ -78,4 +176,10 @@ export interface WorkflowState {
   simulations?: Simulation[];
   insights?: AggregateInsights;
   report?: Report;
+  audienceComposition?: AudienceSegment[];
+  segmentAnalysis?: SegmentAnalysis[];
+  redTeamReport?: RedTeamReport;
+  competitors?: Competitor[];
+  communityRecommendations?: CommunityRecommendation[];
+  mode?: string;
 }

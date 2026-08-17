@@ -5,6 +5,8 @@ import { generatorAgent } from '../agents/generator';
 import { simulatorAgent } from '../agents/simulator';
 import { insightsAgent } from '../agents/insights';
 import { reporterAgent } from '../agents/reporter';
+import { researchAgent } from '../agents/research';
+import { redTeamAgent } from '../agents/redTeam';
 import { compiledWorkflow } from '../langgraph/workflow';
 
 const router = Router();
@@ -123,17 +125,42 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
   }
 
   console.log(`API: Analyzing simulations and generating insights for idea ${ideaId}...`);
-  const insights = await insightsAgent.generateInsights(idea.rawText, simulations);
+  const insights = await insightsAgent.generateInsights(idea.rawText, simulations, personas);
+
+  console.log(`API: Running competitor research and red team analysis...`);
+  let competitors: any[] | undefined = undefined;
+  let communityRecommendations: any[] | undefined = undefined;
+  let redTeamReport: any = undefined;
+
+  try {
+    if (idea.analysis) {
+      const researchResult = await researchAgent.research(idea.rawText, idea.analysis);
+      competitors = researchResult.competitors;
+      communityRecommendations = researchResult.communityRecommendations;
+    }
+  } catch (error) {
+    console.error('API: Research agent failed', error);
+  }
+
+  try {
+    redTeamReport = await redTeamAgent.analyze(idea.rawText, personas, simulations, insights.segmentBreakdown);
+  } catch (error) {
+    console.error('API: Red Team agent failed', error);
+  }
 
   console.log(`API: Compiling final report markdown...`);
-  const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights);
+  const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, redTeamReport, competitors, communityRecommendations);
   const savedReport = await dbService.saveReport(ideaId, insights, reportMarkdown);
 
   return res.json({
     message: 'Insights and report generated successfully.',
     ideaId,
     insights,
-    report: savedReport
+    report: savedReport,
+    redTeamReport,
+    competitors,
+    communityRecommendations,
+    segmentAnalysis: insights.segmentBreakdown
   });
 }));
 
@@ -162,7 +189,11 @@ router.post('/full-analysis', asyncHandler(async (req: Request, res: Response) =
     personas: finalState.personas,
     simulations: finalState.simulations,
     insights: finalState.insights,
-    report: finalState.report
+    report: finalState.report,
+    redTeamReport: finalState.redTeamReport,
+    competitors: finalState.competitors,
+    communityRecommendations: finalState.communityRecommendations,
+    segmentAnalysis: finalState.segmentAnalysis
   });
 }));
 
