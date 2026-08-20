@@ -133,7 +133,7 @@ const SpeechBubble: React.FC<{ text: string, emoji?: string, isDone: boolean, po
           className={`${isDone ? 'text-green-800 dark:text-green-200' : 'text-gray-700 dark:text-gray-300'}`}
         >
           {emoji && <span className="mr-1 text-[10px]">{emoji}</span>}
-          {text}
+          {isDone ? text : <span className="typing-dots">{text.replace(/\.+$/, '')}</span>}
         </span>
         <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-1/2 -translate-x-1/2`}>
           <div className={`w-0 h-0 border-l-[6px] border-r-[6px] border-l-transparent border-r-transparent ${
@@ -148,8 +148,8 @@ const SpeechBubble: React.FC<{ text: string, emoji?: string, isDone: boolean, po
 };
 
 const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[], status: string }> = ({ personas, simulations, status }) => {
-  const displayPersonas = personas.slice(0, 12);
-  const [activeBubbles, setActiveBubbles] = useState<Record<number, string>>({});
+  const displayPersonas = personas.slice(0, 14);
+  const [activeBubbles, setActiveBubbles] = useState<Record<number, { text: string, emoji?: string, isDone: boolean }>>({});
   const bubbleTimerRef = useRef<number | null>(null);
 
   const spriteIndices = useMemo(() => {
@@ -161,18 +161,14 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
     if (count === 0) return [];
 
     const predefinedSeats = [
-      { x: 38.5, y: 35 },
-      { x: 46.5, y: 35 },
-      { x: 54.5, y: 35 },
-      { x: 62.5, y: 35 },
-      { x: 38.5, y: 72 },
-      { x: 46.5, y: 72 },
-      { x: 54.5, y: 72 },
-      { x: 62.5, y: 72 },
-      { x: 27, y: 45 },
-      { x: 27, y: 60 },
-      { x: 74, y: 45 },
-      { x: 74, y: 60 },
+      // Top 4
+      { x: 38.5, y: 35 }, { x: 46.5, y: 35 }, { x: 54.5, y: 35 }, { x: 62.5, y: 35 },
+      // Bottom 4
+      { x: 38.5, y: 72 }, { x: 46.5, y: 72 }, { x: 54.5, y: 72 }, { x: 62.5, y: 72 },
+      // Left 3
+      { x: 27, y: 45 }, { x: 27, y: 52.5 }, { x: 27, y: 60 },
+      // Right 3
+      { x: 74, y: 45 }, { x: 74, y: 52.5 }, { x: 74, y: 60 },
     ];
 
     return displayPersonas.map((_, i) => {
@@ -185,42 +181,66 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
     });
   }, [displayPersonas.length]);
 
-  useEffect(() => {
-    if (status !== 'simulating' && status !== 'done') return;
-
-    const showRandomBubble = () => {
-      const idx = Math.floor(Math.random() * displayPersonas.length);
-      const phrase = THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
-      setActiveBubbles(prev => ({ ...prev, [idx]: phrase }));
-
-      setTimeout(() => {
-        setActiveBubbles(prev => {
-          const next = { ...prev };
-          delete next[idx];
-          return next;
-        });
-      }, 2200 + Math.random() * 1500);
-    };
-
-    setTimeout(() => showRandomBubble(), 400);
-    setTimeout(() => showRandomBubble(), 900);
-    setTimeout(() => showRandomBubble(), 1600);
-
-    bubbleTimerRef.current = window.setInterval(() => {
-      showRandomBubble();
-    }, 1100 + Math.random() * 900);
-
-    return () => {
-      if (bubbleTimerRef.current) clearInterval(bubbleTimerRef.current);
-    };
-  }, [status, displayPersonas.length]);
-
   const getReactionEmoji = (score: number, seed: number) => {
     if (score >= 9) return ['🤩', '❤️', '🔥', '🚀', '🤯'][seed % 5];
     if (score >= 7) return ['👍', '😊', '💡', '🙌', '😎'][seed % 5];
     if (score >= 4) return ['🤔', '😐', '🤷', '🧐', '😬'][seed % 5];
     return ['👎', '😡', '🥱', '🙅', '🤦'][seed % 5];
   };
+
+  useEffect(() => {
+    if (status !== 'simulating' && status !== 'done') return;
+
+    const showRandomBubble = () => {
+      // Don't show too many bubbles at once
+      setActiveBubbles(prev => {
+        if (Object.keys(prev).length >= 4) return prev;
+        
+        const idx = Math.floor(Math.random() * displayPersonas.length);
+        if (prev[idx]) return prev; // already showing
+
+        const persona = displayPersonas[idx];
+        const sim = simulations.find(s => s?.personaId === persona?.id);
+        
+        let bubbleData;
+        if (sim?.result && status === 'done') {
+          // Final reaction
+          const score = sim.result.excitementScore || 5;
+          let emoji = sim.result.reactionEmoji || getReactionEmoji(score, idx);
+          if (emoji.length > 2) emoji = getReactionEmoji(score, idx);
+          const text = sim.result.mainAttraction?.substring(0, 28) || sim.result.reaction?.substring(0, 28) || 'Reviewed!';
+          bubbleData = { text, emoji, isDone: true };
+        } else {
+          // Thinking phase
+          const phrase = THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
+          bubbleData = { text: phrase, isDone: false };
+        }
+
+        setTimeout(() => {
+          setActiveBubbles(current => {
+            const next = { ...current };
+            delete next[idx];
+            return next;
+          });
+        }, 3000 + Math.random() * 2000); // stay on screen for 3-5 seconds
+
+        return { ...prev, [idx]: bubbleData };
+      });
+    };
+
+    // Initial staggered bubbles
+    setTimeout(() => showRandomBubble(), 400);
+    setTimeout(() => showRandomBubble(), 1200);
+    setTimeout(() => showRandomBubble(), 2000);
+
+    bubbleTimerRef.current = window.setInterval(() => {
+      showRandomBubble();
+    }, 1500);
+
+    return () => {
+      if (bubbleTimerRef.current) clearInterval(bubbleTimerRef.current);
+    };
+  }, [status, displayPersonas.length, simulations]);
 
   return (
     <motion.div
@@ -262,15 +282,10 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
           const spriteIdx = spriteIndices[idx];
           const spritePos = getSpritePosition(spriteIdx);
 
-          let bubbleText = activeBubbles[idx] || '';
-          let bubbleEmoji: string | undefined;
-
-          if (isDone && sim.result) {
-            const score = sim.result.excitementScore || 5;
-            bubbleEmoji = sim.result.reactionEmoji || getReactionEmoji(score, idx);
-            if (bubbleEmoji.length > 2) bubbleEmoji = getReactionEmoji(score, idx);
-            bubbleText = sim.result.mainAttraction?.substring(0, 28) || sim.result.reaction?.substring(0, 28) || 'Reviewed!';
-          }
+          const activeBubble = activeBubbles[idx];
+          let bubbleText = activeBubble?.text || '';
+          let bubbleEmoji = activeBubble?.emoji;
+          let isDoneBubble = activeBubble?.isDone || false;
 
           return (
             <motion.div
@@ -286,11 +301,11 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
               }}
             >
               <AnimatePresence>
-                {(isDone || activeBubbles[idx]) && (
+                {activeBubble && (
                   <SpeechBubble
                     text={bubbleText}
-                    emoji={isDone ? bubbleEmoji : undefined}
-                    isDone={isDone}
+                    emoji={bubbleEmoji}
+                    isDone={isDoneBubble}
                     position={pos.bubblePos}
                   />
                 )}
