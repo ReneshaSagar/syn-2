@@ -124,7 +124,7 @@ const SpeechBubble: React.FC<{ text: string, emoji?: string, isDone: boolean, po
       <div className={`relative px-2.5 py-1.5 rounded-lg whitespace-nowrap text-center shadow-lg ${
         isDone 
           ? 'bg-green-50 dark:bg-green-900/60 border-2 border-green-400 dark:border-green-600' 
-          : 'bg-white dark:bg-[#1a1a1a] border-2 border-gray-300 dark:border-[#555]'
+          : 'bg-white dark:bg-[#1a1a1a] border-2 border-gray-300 dark:border-[#555] min-w-[32px]'
       }`}
         style={{ imageRendering: 'pixelated' }}
       >
@@ -194,7 +194,8 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
     const showRandomBubble = () => {
       // Don't show too many bubbles at once
       setActiveBubbles(prev => {
-        if (Object.keys(prev).length >= 4) return prev;
+        // Strict limit of 2 concurrent bubbles for a more natural conversation flow
+        if (Object.keys(prev).length >= 2) return prev;
         
         const idx = Math.floor(Math.random() * displayPersonas.length);
         if (prev[idx]) return prev; // already showing
@@ -211,9 +212,8 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
           const text = sim.result.mainAttraction?.substring(0, 28) || sim.result.reaction?.substring(0, 28) || 'Reviewed!';
           bubbleData = { text, emoji, isDone: true };
         } else {
-          // Thinking phase
-          const phrase = THINKING_PHRASES[Math.floor(Math.random() * THINKING_PHRASES.length)];
-          bubbleData = { text: phrase, isDone: false };
+          // Thinking phase - just the animated ...
+          bubbleData = { text: '', isDone: false };
         }
 
         setTimeout(() => {
@@ -229,13 +229,12 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
     };
 
     // Initial staggered bubbles
-    setTimeout(() => showRandomBubble(), 400);
-    setTimeout(() => showRandomBubble(), 1200);
-    setTimeout(() => showRandomBubble(), 2000);
+    setTimeout(() => showRandomBubble(), 1000);
+    setTimeout(() => showRandomBubble(), 3000);
 
     bubbleTimerRef.current = window.setInterval(() => {
       showRandomBubble();
-    }, 1500);
+    }, 2500); // Wait longer between new bubble spawns
 
     return () => {
       if (bubbleTimerRef.current) clearInterval(bubbleTimerRef.current);
