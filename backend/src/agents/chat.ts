@@ -56,5 +56,15 @@ The user is the creator of this idea. They are asking you follow-up questions ab
     }
 
     return await llmService.callLlmChat(systemInstruction, messages, 'openai/gpt-4o');
+  },
+
+  async summarizeChatToPivot(messages: ChatMessage[]): Promise<string> {
+    const systemInstruction = `You are an expert product strategist. Your task is to analyze the conversation history between a user (the founder) and an AI analyst/persona, and determine exactly how the user wants to pivot or modify their original idea based on the discussion.
+Output ONLY a single, clear, concise instruction describing the pivot (e.g., "The user wants to pivot to a B2B model and charge $99/mo"). Do not include any other text.`;
+    
+    const conversation = messages.map(m => `${m.role}: ${m.content}`).join('\n');
+    const userPrompt = `Conversation history:\n${conversation}\n\nWhat is the clear, concise pivot instruction based on this conversation?`;
+
+    return await llmService.callLlmText(systemInstruction, userPrompt, 'openai/gpt-4o');
   }
 };

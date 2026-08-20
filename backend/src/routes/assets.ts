@@ -32,4 +32,30 @@ router.post('/generate-asset', asyncHandler(async (req: Request, res: Response) 
   });
 }));
 
+/**
+ * POST /generate-draft
+ * Generates a platform-native social media launch post draft.
+ */
+router.post('/generate-draft', asyncHandler(async (req: Request, res: Response) => {
+  const { ideaId, platform, community } = req.body;
+  if (!ideaId || typeof ideaId !== 'string') {
+    return res.status(400).json({ error: 'ideaId is required.' });
+  }
+  if (!platform || typeof platform !== 'string') {
+    return res.status(400).json({ error: 'platform is required.' });
+  }
+  if (!community || typeof community !== 'string') {
+    return res.status(400).json({ error: 'community is required.' });
+  }
+
+  console.log(`API: Generating draft for idea ${ideaId} on ${platform} for ${community}...`);
+  
+  const draftMarkdown = await assetAgent.generateDraft(ideaId, platform, community);
+
+  return res.json({
+    message: 'Draft generated successfully.',
+    draftMarkdown
+  });
+}));
+
 export default router;

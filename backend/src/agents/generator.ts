@@ -16,9 +16,10 @@ export const generatorAgent = {
       throw new Error('Idea text is required to generate an audience.');
     }
 
-    const segments = analysis.audienceComposition || [];
+    let segments = analysis.audienceComposition || [];
     if (segments.length === 0) {
-      throw new Error('No audience segments found in analysis.');
+      console.warn('No audience segments found in analysis, falling back to a generic segment.');
+      segments = [{ name: 'General Audience', description: 'General users who might be interested in the concept.', count: 5 }];
     }
 
     console.log('Generating synthetic audience in parallel batches...');

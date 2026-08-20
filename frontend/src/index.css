@@ -71,3 +71,33 @@
     flex: 1;
   }
 }
+
+/* ==========================================
+   PIXEL ART IDLE ANIMATIONS
+   ========================================== */
+
+@keyframes idle-bob-0 {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-2px); }
+}
+@keyframes idle-bob-1 {
+  0%, 100% { transform: translateY(0px); }
+  35% { transform: translateY(-3px); }
+  70% { transform: translateY(1px); }
+}
+@keyframes idle-bob-2 {
+  0%, 100% { transform: translateY(0px); }
+  25% { transform: translateY(-1px); }
+  60% { transform: translateY(-2.5px); }
+}
+
+@keyframes idle-sway-0 {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(1.5deg); }
+  70% { transform: rotate(-1deg); }
+}
+@keyframes idle-sway-1 {
+  0%, 100% { transform: rotate(0deg); }
+  40% { transform: rotate(-1.2deg); }
+  80% { transform: rotate(1.8deg); }
+}

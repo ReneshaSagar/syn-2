@@ -32,4 +32,24 @@ router.post('/chat', asyncHandler(async (req: Request, res: Response) => {
   });
 }));
 
+/**
+ * POST /summarize-chat
+ * Summarizes the chat history to generate a pivot instruction.
+ */
+router.post('/summarize-chat', asyncHandler(async (req: Request, res: Response) => {
+  const { messages } = req.body;
+  if (!Array.isArray(messages)) {
+    return res.status(400).json({ error: 'messages array is required.' });
+  }
+
+  console.log(`API: Summarizing chat...`);
+  
+  const pivotInstruction = await chatAgent.summarizeChatToPivot(messages);
+
+  return res.json({
+    message: 'Chat summarized successfully.',
+    pivotInstruction
+  });
+}));
+
 export default router;

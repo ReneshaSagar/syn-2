@@ -23,5 +23,25 @@ Return ONLY the Markdown content for the asset. Do not include any meta-commenta
     const userPrompt = `Generate the asset to address this: "${concernOrRecommendation}"`;
 
     return await llmService.callLlmText(systemInstruction, userPrompt, 'anthropic/claude-3-5-sonnet-20240620');
+  },
+
+  async generateDraft(ideaId: string, platform: string, community: string): Promise<string> {
+    const idea = await dbService.getIdea(ideaId);
+    if (!idea) throw new Error('Idea not found');
+
+    const systemInstruction = `You are an expert social media growth hacker and copywriter.
+The user has a startup idea:
+"${idea.rawText}"
+
+Your task is to generate a platform-native social media launch post.
+The target platform is: ${platform}
+The target community or audience is: ${community}
+
+The draft should be highly engaging, perfectly formatted for ${platform}, and directly address the ${community} community.
+Return ONLY the markdown text for the draft post. Do not include any other text or commentary.`;
+
+    const userPrompt = `Write the draft for ${platform} targeting ${community}.`;
+
+    return await llmService.callLlmText(systemInstruction, userPrompt, 'anthropic/claude-3-5-sonnet-20240620');
   }
 };

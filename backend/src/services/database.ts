@@ -1,17 +1,43 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Idea, IdeaAnalysis, Persona, Simulation, SimulationResult, AggregateInsights, Report, VersionSnapshot } from '../types';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// In-Memory Fallback DB Store
-class InMemoryDB {
-  public ideas: Map<string, Idea> = new Map();
-  public personas: Map<string, Persona[]> = new Map(); // idea_id -> Persona[]
-  public simulations: Map<string, Simulation[]> = new Map(); // idea_id -> Simulation[]
-  public reports: Map<string, Report> = new Map(); // idea_id -> Report
-  public versions: Map<string, VersionSnapshot[]> = new Map();
+// Local File Fallback DB Store
+class FileStoreDB {
+  public data = {
+    ideas: {} as Record<string, Idea>,
+    personas: {} as Record<string, Persona[]>,
+    simulations: {} as Record<string, Simulation[]>,
+    reports: {} as Record<string, Report>,
+    versions: {} as Record<string, VersionSnapshot[]>
+  };
+  
+  private dbPath = path.join(process.cwd(), 'data', 'db.json');
+
+  constructor() {
+    if (fs.existsSync(this.dbPath)) {
+      try {
+        const fileContent = fs.readFileSync(this.dbPath, 'utf8');
+        this.data = JSON.parse(fileContent);
+      } catch (e) {
+        console.error('Failed to parse db.json, starting fresh.', e);
+      }
+    } else {
+      if (!fs.existsSync(path.dirname(this.dbPath))) {
+        fs.mkdirSync(path.dirname(this.dbPath), { recursive: true });
+      }
+      this.save();
+    }
+  }
+
+  public save() {
+    fs.writeFileSync(this.dbPath, JSON.stringify(this.data, null, 2));
+  }
 }
 
-const localStore = new InMemoryDB();
+const localStore = new FileStoreDB();
 
 // Initialize Supabase Client
 let supabase: SupabaseClient | null = null;
@@ -26,10 +52,21 @@ if (supabaseUrl && supabaseKey && supabaseUrl !== 'your_supabase_url_here' && su
     console.error('⚠️ Failed to initialize Supabase client:', error);
   }
 } else {
-  console.log('ℹ️ Supabase environment variables not set or default. Running with In-Memory fallback database.');
+  console.log('ℹ️ Supabase environment variables not set or default. Running with Local File fallback database.');
 }
 
 export const dbService = {
+  /**
+   * Return all ideas stored locally for history sidebar
+   */
+  async getAllIdeasLocally(): Promise<Idea[]> {
+    return Object.values(localStore.data.ideas).sort((a, b) => {
+      const dateA = new Date(a.createdAt).getTime();
+      const dateB = new Date(b.createdAt).getTime();
+      return dateB - dateA; // Descending
+    });
+  },
+
   /**
    * Save a new idea & its analysis
    */
@@ -56,14 +93,12 @@ export const dbService = {
           key_value_proposition: analysis?.keyValueProposition
         });
 
-      if (!error) {
-        return idea;
-      }
+      if (!error) return idea;
       console.error('Supabase saveIdea error:', error);
-      console.log('Falling back to local store for saveIdea');
     }
 
-    localStore.ideas.set(id, idea);
+    localStore.data.ideas[id] = idea;
+    localStore.save();
     return idea;
   },
 
@@ -93,19 +128,23 @@ export const dbService = {
           createdAt: new Date(data.created_at)
         } as any;
       }
-      console.error('Supabase getIdea error:', error);
     }
 
-    return localStore.ideas.get(id) || null;
+    return localStore.data.ideas[id] || null;
   },
 
   /**
    * Save generated personas for an idea
    */
   async savePersonas(ideaId: string, personas: Persona[]): Promise<Persona[]> {
+    const personasWithIds = personas.map(p => ({
+      ...p,
+      id: p.id || crypto.randomUUID()
+    }));
+
     if (supabase) {
-      const rows = personas.map(p => ({
-        id: p.id || crypto.randomUUID(),
+      const rows = personasWithIds.map(p => ({
+        id: p.id,
         idea_id: ideaId,
         name: p.name,
         age: p.age,
@@ -118,35 +157,13 @@ export const dbService = {
         personality_traits: p.personalityTraits
       }));
 
-      const { error } = await supabase
-        .from('personas')
-        .insert(rows);
-
-      if (!error) {
-        // Return updated personas with generated ids
-        return rows.map(r => ({
-          id: r.id,
-          name: r.name,
-          age: r.age,
-          role: r.role,
-          experience: r.experience,
-          motivations: r.motivations,
-          frustrations: r.frustrations,
-          concerns: r.concerns,
-          goals: r.goals,
-          personalityTraits: r.personality_traits
-        })) as any;
-      }
+      const { error } = await supabase.from('personas').insert(rows);
+      if (!error) return personasWithIds;
       console.error('Supabase savePersonas error:', error);
-      console.log('Falling back to local store for savePersonas');
     }
 
-    // Ensure all personas have IDs
-    const personasWithIds = personas.map(p => ({
-      ...p,
-      id: p.id || crypto.randomUUID()
-    }));
-    localStore.personas.set(ideaId, personasWithIds);
+    localStore.data.personas[ideaId] = personasWithIds;
+    localStore.save();
     return personasWithIds;
   },
 
@@ -174,10 +191,9 @@ export const dbService = {
           personalityTraits: d.personality_traits
         })) as any;
       }
-      console.error('Supabase getPersonas error:', error);
     }
 
-    return localStore.personas.get(ideaId) || [];
+    return localStore.data.personas[ideaId] || [];
   },
 
   /**
@@ -205,18 +221,13 @@ export const dbService = {
         suggestions: s.result.suggestions
       }));
 
-      const { error } = await supabase
-        .from('simulations')
-        .insert(rows);
-
-      if (!error) {
-        return list;
-      }
+      const { error } = await supabase.from('simulations').insert(rows);
+      if (!error) return list;
       console.error('Supabase saveSimulations error:', error);
-      console.log('Falling back to local store for saveSimulations');
     }
 
-    localStore.simulations.set(ideaId, list);
+    localStore.data.simulations[ideaId] = list;
+    localStore.save();
     return list;
   },
 
@@ -258,12 +269,10 @@ export const dbService = {
           createdAt: new Date(d.created_at)
         })) as any;
       }
-      console.error('Supabase getSimulations error:', error);
     }
 
-    // Attach personas to simulation items from memory
-    const sims = localStore.simulations.get(ideaId) || [];
-    const personas = localStore.personas.get(ideaId) || [];
+    const sims = localStore.data.simulations[ideaId] || [];
+    const personas = localStore.data.personas[ideaId] || [];
     return sims.map(s => ({
       ...s,
       persona: personas.find(p => p.id === s.personaId)
@@ -301,14 +310,12 @@ export const dbService = {
           full_report_markdown: fullReportMarkdown
         });
 
-      if (!error) {
-        return report;
-      }
+      if (!error) return report;
       console.error('Supabase saveReport error:', error);
-      console.log('Falling back to local store for saveReport');
     }
 
-    localStore.reports.set(ideaId, report);
+    localStore.data.reports[ideaId] = report;
+    localStore.save();
     return report;
   },
 
@@ -342,19 +349,19 @@ export const dbService = {
           createdAt: new Date(data.created_at)
         } as any;
       }
-      console.error('Supabase getReport error:', error);
     }
 
-    return localStore.reports.get(ideaId) || null;
+    return localStore.data.reports[ideaId] || null;
   },
 
   /**
    * Save a version snapshot
    */
   async saveVersion(ideaId: string, snapshot: VersionSnapshot): Promise<VersionSnapshot> {
-    const history = localStore.versions.get(ideaId) || [];
+    const history = localStore.data.versions[ideaId] || [];
     history.push(snapshot);
-    localStore.versions.set(ideaId, history);
+    localStore.data.versions[ideaId] = history;
+    localStore.save();
     return snapshot;
   },
 
@@ -362,6 +369,6 @@ export const dbService = {
    * Get version history
    */
   async getVersionHistory(ideaId: string): Promise<VersionSnapshot[]> {
-    return localStore.versions.get(ideaId) || [];
+    return localStore.data.versions[ideaId] || [];
   }
 };

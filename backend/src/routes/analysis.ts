@@ -197,4 +197,46 @@ router.post('/full-analysis', asyncHandler(async (req: Request, res: Response) =
   });
 }));
 
+/**
+ * GET /history
+ * Returns all saved ideas from the database
+ */
+router.get('/history', asyncHandler(async (req: Request, res: Response) => {
+  const ideas = await dbService.getAllIdeasLocally();
+  // Return just the lightweight data
+  const history = ideas.map(idea => ({
+    id: idea.id,
+    rawText: idea.rawText,
+    createdAt: idea.createdAt
+  }));
+  return res.json({ history });
+}));
+
+/**
+ * GET /history/:ideaId
+ * Returns the full state of a past idea for loading into the dashboard
+ */
+router.get('/history/:ideaId', asyncHandler(async (req: Request, res: Response) => {
+  const { ideaId } = req.params;
+  const idea = await dbService.getIdea(ideaId);
+  if (!idea) {
+    return res.status(404).json({ error: 'Idea not found' });
+  }
+
+  const personas = await dbService.getPersonas(ideaId);
+  const simulations = await dbService.getSimulations(ideaId);
+  const report = await dbService.getReport(ideaId);
+  const versionHistory = await dbService.getVersionHistory(ideaId);
+
+  return res.json({
+    ideaId: idea.id,
+    analyzedIdea: idea.analysis,
+    personas,
+    simulations,
+    insights: report?.insights,
+    report,
+    versionHistory
+  });
+}));
+
 export default router;

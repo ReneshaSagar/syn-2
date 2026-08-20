@@ -227,3 +227,23 @@ export const pivotIdea = async (ideaId: string, pivotInstruction: string) => {
   const response = await axios.post(`${API_URL}/pivot`, { ideaId, pivotInstruction });
   return response.data;
 };
+
+export const fetchHistory = async () => {
+  const response = await axios.get(`${API_URL}/history`);
+  return response.data;
+};
+
+export const loadIdeaState = async (ideaId: string) => {
+  const response = await axios.get(`${API_URL}/history/${ideaId}`);
+  return response.data;
+};
+
+export const summarizeChat = async (messages: { role: 'user'|'assistant', content: string }[]) => {
+  const response = await axios.post(`${API_URL}/summarize-chat`, { messages });
+  return response.data;
+};
+
+export const generateDraft = async (ideaId: string, platform: string, community: string) => {
+  const response = await axios.post(`${API_URL}/generate-draft`, { ideaId, platform, community });
+  return response.data;
+};

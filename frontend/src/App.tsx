@@ -5,7 +5,7 @@ import { ReportDashboard } from './components/ReportDashboard';
 import { ClarificationView } from './components/ClarificationView';
 import { Moon, Sun } from 'lucide-react';
 import { 
-  analyzeIdea, generateAudience, simulate, generateReport, 
+  analyzeIdea, generateAudience, simulate, generateReport, loadIdeaState,
   type IdeaAnalysis, type Persona, type Simulation, type Report,
   type RedTeamReport, type Competitor, type CommunityRecommendation, type VersionSnapshot
 } from './services/api';
@@ -119,6 +119,32 @@ function App() {
     startSimulationProcess(combinedIdea, true);
   };
 
+  const handleLoadHistory = async (ideaId: string) => {
+    try {
+      setAppState('simulation');
+      setSimStatus('analyzing');
+      
+      const data = await loadIdeaState(ideaId);
+      
+      setAnalysis(data.analyzedIdea);
+      setPersonas(data.personas || []);
+      setSimulations(data.simulations || []);
+      setReport(data.report);
+      setVersionHistory(data.versionHistory || []);
+      setRedTeamReport(null);
+      setCompetitors([]);
+      setCommunityRecommendations([]);
+      
+      setTimeout(() => {
+        setAppState('report');
+      }, 500);
+    } catch (err) {
+      console.error('Failed to load history', err);
+      alert('Failed to load historical idea.');
+      setAppState('landing');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-framer-bg dark:bg-[#050505] transition-colors duration-500">
       
@@ -131,7 +157,10 @@ function App() {
       </button>
 
       {appState === 'landing' && (
-        <LandingPage onSubmitIdea={(idea) => startSimulationProcess(idea, false)} />
+        <LandingPage 
+          onSubmitIdea={(idea) => startSimulationProcess(idea, false)} 
+          onLoadHistory={handleLoadHistory}
+        />
       )}
       
       {appState === 'clarification' && (

@@ -6,7 +6,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin } from 'lucide-react';
 import { ChatDrawer } from './ChatDrawer';
-import { generateAsset, pivotIdea } from '../services/api';
+import { generateAsset, pivotIdea, sendChatMessage, summarizeChat, generateDraft } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 
 interface ReportDashboardProps {
@@ -34,7 +34,61 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   onRestart, 
   onPivotComplete 
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validate' | 'versions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validate' | 'brainstorm' | 'versions'>('overview');
+  
+  // Brainstorm Chat State
+  const [brainstormMessages, setBrainstormMessages] = useState<{role: 'user'|'assistant', content: string}[]>([
+    { role: 'assistant', content: "Hello! I'm your Synthetic R&D Head. Let's discuss the simulation results and figure out how to pivot or improve your idea. What are you thinking?" }
+  ]);
+  const [brainstormInput, setBrainstormInput] = useState('');
+  const [isBrainstormLoading, setIsBrainstormLoading] = useState(false);
+  const [isSummarizing, setIsSummarizing] = useState(false);
+
+  const handleBrainstormSend = async () => {
+    if (!brainstormInput.trim() || isBrainstormLoading) return;
+    const userMsg = { role: 'user' as const, content: brainstormInput };
+    const newMessages = [...brainstormMessages, userMsg];
+    setBrainstormMessages(newMessages);
+    setBrainstormInput('');
+    setIsBrainstormLoading(true);
+    try {
+      const result = await sendChatMessage(report.ideaId, newMessages, { type: 'general' });
+      setBrainstormMessages([...newMessages, { role: 'assistant', content: result.response }]);
+    } catch (err) {
+      setBrainstormMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered a network error.' }]);
+    } finally {
+      setIsBrainstormLoading(false);
+    }
+  };
+
+  const handleSummarizeAndPivot = async () => {
+    if (brainstormMessages.length <= 1) return;
+    setIsSummarizing(true);
+    try {
+      const { pivotInstruction } = await summarizeChat(brainstormMessages);
+      setPivotInstruction(pivotInstruction);
+      setIsPivotModalOpen(true);
+    } catch (err) {
+      alert("Failed to summarize chat.");
+    } finally {
+      setIsSummarizing(false);
+    }
+  };
+
+  const handleGenerateDraft = async (platform: string, community: string) => {
+    setAssetTarget(`Launch post for ${platform} - ${community}`);
+    setAssetMarkdown(null);
+    setIsGeneratingAsset(true);
+    try {
+      const res = await generateDraft(report.ideaId, platform, community);
+      setAssetMarkdown(res.draftMarkdown);
+    } catch (err) {
+      setAssetMarkdown("Sorry, an error occurred while generating the draft.");
+    } finally {
+      setIsGeneratingAsset(false);
+    }
+  };
+
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
   const [competitorFilter, setCompetitorFilter] = useState('All');
   const [expandedCompetitor, setExpandedCompetitor] = useState<string | null>(null);
@@ -235,6 +289,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
             { id: 'redteam', label: 'Red Team', icon: ShieldAlert },
             { id: 'competitors', label: 'Competitors', icon: Target },
             { id: 'validate', label: 'Where to Validate', icon: ChevronRight },
+            { id: 'brainstorm', label: 'Brainstorm', icon: MessageCircle },
             { id: 'versions', label: 'Versions', icon: History }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -320,7 +375,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                       <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#333" />
                       <XAxis type="number" domain={[0, 10]} stroke="#888" />
                       <YAxis dataKey="segmentName" type="category" width={150} stroke="#888" />
-                      <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor: '#111', borderColor: '#333', borderRadius: '8px', color: '#fff'}} formatter={(value: number) => [(value || 0).toFixed(1) + ' / 10', 'Average Interest']} />
+                      <RechartsTooltip cursor={{fill: 'rgba(255,255,255,0.05)'}} contentStyle={{backgroundColor: '#111', borderColor: '#333', borderRadius: '8px', color: '#fff'}} formatter={(value: any) => [typeof value === 'number' ? value.toFixed(1) + ' / 10' : value, 'Average Interest']} />
                       <Bar dataKey="avgInterest" fill="#3b82f6" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -328,74 +383,9 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               </div>
             )}
 
-            {/* Hype vs Utility Ratio */}
-            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2.5rem] p-10 relative overflow-hidden">
-              <div className="absolute top-8 right-10"><Badge type="ANALYZED" /></div>
-              <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-2">Hype vs. Utility</h3>
-              <p className="text-gray-500 dark:text-gray-400 mb-8 text-sm max-w-2xl">
-                Does the audience react emotionally (Hype) or logically (Utility)? High utility ideas are often necessary tools, while high hype ideas are consumer products or trends.
-              </p>
-              
-              <div className="w-full h-8 bg-gray-100 dark:bg-[#222] rounded-full overflow-hidden flex shadow-inner relative">
-                <div 
-                  className="h-full bg-gradient-to-r from-pink-500 to-rose-500 flex items-center pl-4 transition-all duration-1000"
-                  style={{ width: `${hypeUtilityStats.hype}%` }}
-                >
-                  <span className="text-white text-xs font-bold shadow-sm">HYPE {hypeUtilityStats.hype}%</span>
-                </div>
-                <div 
-                  className="h-full bg-gradient-to-l from-blue-500 to-cyan-500 flex items-center justify-end pr-4 transition-all duration-1000"
-                  style={{ width: `${hypeUtilityStats.utility}%` }}
-                >
-                  <span className="text-white text-xs font-bold shadow-sm">UTILITY {hypeUtilityStats.utility}%</span>
-                </div>
-              </div>
-              <div className="flex justify-between mt-4 text-xs font-medium uppercase tracking-wider text-gray-400">
-                <span>Emotionally Driven</span>
-                <span>Logically Driven</span>
-              </div>
-            </div>
 
-            {/* Polarization Matrix */}
-            {report.insights?.segmentBreakdown && report.insights.segmentBreakdown.length > 0 && (
-              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] shadow-sm rounded-[2.5rem] p-10">
-                <div className="flex justify-between items-center mb-8">
-                  <div>
-                    <h3 className="text-2xl font-semibold text-gray-900 dark:text-white">Polarization Matrix</h3>
-                    <p className="text-gray-500 dark:text-gray-400 mt-2 text-sm">Visualizing "Tourists" (High Interest, Low Intent) vs. "Whales" (High Interest, High Intent).</p>
-                  </div>
-                  <Badge type="ANALYZED" />
-                </div>
-                <div className="h-80 w-full relative">
-                  {/* Quadrant backgrounds */}
-                  <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 p-10 pointer-events-none opacity-5 dark:opacity-10">
-                    <div className="border-r border-b border-gray-500 bg-red-500 rounded-tl-xl" />
-                    <div className="border-b border-gray-500 bg-yellow-500 rounded-tr-xl" />
-                    <div className="border-r border-gray-500 bg-gray-500 rounded-bl-xl" />
-                    <div className="bg-green-500 rounded-br-xl" />
-                  </div>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                      <XAxis type="number" dataKey="avgInterest" name="Interest" domain={[0, 10]} label={{ value: 'Average Interest (0-10)', position: 'insideBottom', offset: -10, fill: '#888' }} stroke="#888" />
-                      <YAxis type="number" dataKey="wouldPayPercent" name="Willingness to Pay" domain={[0, 100]} label={{ value: 'Willingness to Pay (%)', angle: -90, position: 'insideLeft', offset: -5, fill: '#888' }} stroke="#888" />
-                      <ZAxis type="category" dataKey="segmentName" name="Segment" />
-                      <RechartsTooltip cursor={{strokeDasharray: '3 3'}} contentStyle={{backgroundColor: '#111', borderColor: '#333', borderRadius: '8px', color: '#fff'}} formatter={(value: number, name: string) => [name === 'Willingness to Pay' ? `${(value || 0).toFixed(1)}%` : (value || 0).toFixed(1), name]} />
-                      <Scatter data={report.insights.segmentBreakdown} fill="#8b5cf6">
-                        {report.insights.segmentBreakdown?.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
-                      </Scatter>
-                    </ScatterChart>
-                  </ResponsiveContainer>
-                  {/* Quadrant Labels */}
-                  <span className="absolute top-4 right-6 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Whales</span>
-                  <span className="absolute bottom-6 right-6 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Tourists</span>
-                  <span className="absolute top-4 left-14 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Niche</span>
-                  <span className="absolute bottom-6 left-14 text-xs font-bold text-gray-400 uppercase tracking-widest pointer-events-none">Disinterested</span>
-                </div>
-              </div>
-            )}
+
+
 
             {/* Actionable Roadmap */}
             {report.insights?.actionableRoadmap && report.insights.actionableRoadmap.length > 0 && (() => {
@@ -819,10 +809,18 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                              </div>
                            </div>
                            <p className="text-gray-600 dark:text-gray-400 text-sm mb-3">{rec.reason}</p>
-                           <div className="flex flex-wrap gap-2 mt-2">
-                             <span className="text-xs bg-white dark:bg-[#222] border border-gray-200 dark:border-[#444] px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">👥 {rec.audienceType}</span>
-                             <span className="text-xs bg-white dark:bg-[#222] border border-gray-200 dark:border-[#444] px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">💬 {rec.feedbackType} expected</span>
-                           </div>
+                           <div className="flex flex-wrap gap-2 mt-2 mb-4">
+                              <span className="text-xs bg-white dark:bg-[#222] border border-gray-200 dark:border-[#444] px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">👥 {rec.audienceType}</span>
+                              <span className="text-xs bg-white dark:bg-[#222] border border-gray-200 dark:border-[#444] px-3 py-1 rounded-full text-gray-600 dark:text-gray-300">💬 {rec.feedbackType} expected</span>
+                            </div>
+                            <div className="pt-4 border-t border-gray-100 dark:border-[#333]">
+                              <button 
+                                onClick={() => handleGenerateDraft(rec.platform, rec.community)}
+                                className="text-sm font-semibold text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-2 transition-colors"
+                              >
+                                <Wand2 className="w-4 h-4" /> Draft Launch Post
+                              </button>
+                            </div>
                          </div>
                        </div>
                      ))}
@@ -830,6 +828,81 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                 </div>
               </>
             )}
+          </motion.div>
+        )}
+
+        {/* TAB 5.5: BRAINSTORM */}
+        {activeTab === 'brainstorm' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm flex flex-col h-[70vh]">
+              <div className="flex justify-between items-center mb-6 pb-6 border-b border-gray-100 dark:border-[#222]">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <MessageCircle className="w-6 h-6 text-indigo-500" />
+                    Synthetic R&D Head
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Discuss insights and formulate a pivot.</p>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={handleSummarizeAndPivot}
+                    disabled={isSummarizing || brainstormMessages.length <= 1}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2 disabled:opacity-50 transition-colors"
+                  >
+                    {isSummarizing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
+                    Summarize & Pivot
+                  </button>
+                </div>
+              </div>
+
+              {/* Chat Area */}
+              <div className="flex-1 overflow-y-auto space-y-6 pr-4 mb-6">
+                {brainstormMessages.map((msg, idx) => (
+                  <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                    <div className={`max-w-[85%] rounded-2xl p-4 ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-gray-50 dark:bg-[#111] text-gray-800 dark:text-gray-200 rounded-bl-none border border-gray-200 dark:border-[#222]'}`}>
+                      {msg.role === 'user' ? (
+                        <p className="text-sm">{msg.content}</p>
+                      ) : (
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {isBrainstormLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-2xl rounded-bl-none p-4 flex items-center gap-2 text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-sm font-medium">Thinking...</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Input Area */}
+              <div className="pt-4 border-t border-gray-100 dark:border-[#222]">
+                <form 
+                  onSubmit={(e) => { e.preventDefault(); handleBrainstormSend(); }}
+                  className="flex items-center gap-3 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#333] rounded-full px-4 py-2 focus-within:border-indigo-500 dark:focus-within:border-indigo-500 transition-colors"
+                >
+                  <input 
+                    type="text"
+                    value={brainstormInput}
+                    onChange={(e) => setBrainstormInput(e.target.value)}
+                    placeholder="E.g., What if we charge $99/mo instead of a one-time fee?"
+                    className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-900 dark:text-white py-2"
+                  />
+                  <button 
+                    type="submit"
+                    disabled={!brainstormInput.trim() || isBrainstormLoading}
+                    className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white p-2 rounded-full transition-colors flex items-center justify-center"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </form>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -893,15 +966,6 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         )}
 
       </div>
-
-      {/* Floating Global Chat Button */}
-      <button 
-        onClick={() => openChat('general')}
-        className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-2xl transition-transform hover:scale-110 flex items-center gap-2 z-30"
-      >
-        <MessageCircle className="w-6 h-6" />
-        <span className="font-semibold hidden md:inline">Chat with Report</span>
-      </button>
 
       <ChatDrawer 
         isOpen={isChatOpen} 
