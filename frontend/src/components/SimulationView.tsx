@@ -148,7 +148,7 @@ const SpeechBubble: React.FC<{ text: string, emoji?: string, isDone: boolean, po
 };
 
 const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[], status: string }> = ({ personas, simulations, status }) => {
-  const displayPersonas = personas.slice(0, 14);
+  const displayPersonas = personas.slice(0, 12);
   const [activeBubbles, setActiveBubbles] = useState<Record<number, { text: string, emoji?: string, isDone: boolean }>>({});
   const bubbleTimerRef = useRef<number | null>(null);
 
@@ -165,10 +165,10 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
       { x: 38.5, y: 35 }, { x: 46.5, y: 35 }, { x: 54.5, y: 35 }, { x: 62.5, y: 35 },
       // Bottom 4
       { x: 38.5, y: 72 }, { x: 46.5, y: 72 }, { x: 54.5, y: 72 }, { x: 62.5, y: 72 },
-      // Left 3
-      { x: 27, y: 45 }, { x: 27, y: 52.5 }, { x: 27, y: 60 },
-      // Right 3
-      { x: 74, y: 45 }, { x: 74, y: 52.5 }, { x: 74, y: 60 },
+      // Left 2 (removed the squished middle seat)
+      { x: 27, y: 45 }, { x: 27, y: 60 },
+      // Right 2
+      { x: 74, y: 45 }, { x: 74, y: 60 },
     ];
 
     return displayPersonas.map((_, i) => {
@@ -354,7 +354,9 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
                 </div>
               </div>
 
-              <div className="absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 top-full mt-6 left-1/2 -translate-x-1/2 w-44 bg-white/95 dark:bg-black/95 backdrop-blur-md border border-gray-200 dark:border-[#333] shadow-xl px-3 py-2 rounded-lg z-50 pointer-events-none text-center">
+              <div className={`absolute opacity-0 group-hover:opacity-100 transition-opacity duration-200 left-1/2 -translate-x-1/2 w-44 bg-white/95 dark:bg-black/95 backdrop-blur-md border border-gray-200 dark:border-[#333] shadow-xl px-3 py-2 rounded-lg z-50 pointer-events-none text-center ${
+                pos.y > 60 ? 'bottom-full mb-2' : 'top-full mt-6'
+              }`}>
                 <span className="font-bold block text-xs text-gray-900 dark:text-white">{persona.name}</span>
                 <span className="block text-[10px] text-gray-500 mt-0.5">{persona.role}</span>
                 <span className="block text-[10px] text-gray-400 mt-0.5">{persona.segment}</span>
@@ -363,8 +365,9 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
           );
         })}
 
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
-          <div className="bg-black/70 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10">
+        {/* Observation Room Label */}
+        <div className="absolute top-4 left-4 z-20">
+          <div className="bg-black/70 backdrop-blur-sm px-4 py-1.5 rounded-full border border-white/10 shadow-lg">
             <span style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '7px', color: '#aaa' }}>
               🔍 OBSERVATION ROOM
             </span>
