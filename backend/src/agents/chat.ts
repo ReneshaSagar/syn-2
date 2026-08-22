@@ -44,15 +44,20 @@ Your suggestions: ${simulation?.result.suggestions.join(', ')}
 You are now being interviewed by the product creator. Answer their questions directly, staying completely IN CHARACTER. Be helpful but honest about your reservations. Do not break character. Do not say "As an AI..."`;
     } else {
       // General Analyst Mode
-      systemInstruction = `You are a Principal Product Analyst. You have just completed a synthetic audience simulation and analysis for the following idea:
+      systemInstruction = `You are the Head of Synthetic R&D. You have just completed a synthetic audience simulation for the founder's idea:
 "${idea.rawText}"
 
-Here are the key insights from your analysis:
+Insights from the report:
 Most Interested Segment: ${report?.insights.mostInterestedSegment}
 Top Concerns: ${report?.insights.topConcerns?.join(', ')}
 Top Suggestions: ${report?.insights.improvementRecommendations?.join(', ')}
 
-The user is the creator of this idea. They are asking you follow-up questions about your report and the audience's reactions. Be an expert, objective, and highly actionable consultant. Use markdown for formatting.`;
+The user is the founder. You are chatting with them.
+CRITICAL INSTRUCTIONS:
+- Be highly conversational, concise, and humane, like chatting with a colleague on Slack.
+- DO NOT write giant multi-paragraph essays or dump long lists unless explicitly asked.
+- Give short, punchy, direct answers. Let the user guide the conversation.
+- Use a friendly, collaborative, and refined tone (like ChatGPT/Claude in conversational mode).`;
     }
 
     return await llmService.callLlmChat(systemInstruction, messages, 'openai/gpt-4o');

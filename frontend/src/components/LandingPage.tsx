@@ -161,7 +161,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                   className="w-full bg-transparent text-framer-text dark:text-white placeholder-gray-400 dark:placeholder-gray-600 p-4 text-xl resize-none focus:outline-none min-h-[60px]"
                   style={{ overflowY: idea.length > 0 && textareaRef.current && textareaRef.current.scrollHeight > 200 ? 'auto' : 'hidden' }}
                 />
-                <div className="flex justify-end pr-2 pb-2">
+                <div className="flex justify-end pr-2 pb-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                      if (!SpeechRecognition) return alert('Speech Recognition not supported in this browser.');
+                      const recognition = new SpeechRecognition();
+                      recognition.continuous = false;
+                      recognition.interimResults = false;
+                      recognition.onstart = () => setIsFocused(true);
+                      recognition.onresult = (event: any) => {
+                        const transcript = event.results[0][0].transcript;
+                        setIdea(prev => prev ? prev + ' ' + transcript : transcript);
+                        if (textareaRef.current) {
+                          textareaRef.current.style.height = '60px';
+                          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+                        }
+                      };
+                      recognition.start();
+                    }}
+                    className="p-4 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:text-gray-400 dark:hover:bg-[#333] transition-colors flex items-center justify-center shrink-0 group"
+                    title="Speak your idea"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  </button>
                   <button
                     type="submit"
                     disabled={!idea.trim()}

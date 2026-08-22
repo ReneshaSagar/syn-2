@@ -123,6 +123,7 @@ export interface CommunityRecommendation {
   audienceType: string;
   feedbackType: string;
   communityRules?: string;
+  url?: string;
 }
 
 export interface VersionSnapshot {

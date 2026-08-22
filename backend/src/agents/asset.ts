@@ -37,8 +37,13 @@ Your task is to generate a platform-native social media launch post.
 The target platform is: ${platform}
 The target community or audience is: ${community}
 
-The draft should be highly engaging, perfectly formatted for ${platform}, and directly address the ${community} community.
-Return ONLY the markdown text for the draft post. Do not include any other text or commentary.`;
+The draft should:
+1) Be highly engaging and perfectly formatted for ${platform} (e.g. use proper spacing, hashtags if relevant, or Reddit-style formatting).
+2) Respect the general word limits and etiquette of the platform.
+3) Clearly and concisely explain the project to the audience.
+4) Directly address the ${community} community.
+
+Return ONLY the markdown text for the draft post. Do not include any other text, pleasantries, or commentary.`;
 
     const userPrompt = `Write the draft for ${platform} targeting ${community}.`;
 

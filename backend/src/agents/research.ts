@@ -65,6 +65,7 @@ export interface CommunityRecommendation {
   audienceType: string;
   feedbackType: string;
   communityRules?: string;
+  url?: string;
 }
 
 export interface ResearchResult {
@@ -87,7 +88,7 @@ export const researchAgent = {
       performWebSearch(communitiesQuery)
     ]);
 
-    const systemInstruction = 'You are a market research analyst and community intelligence expert. Given a product idea, its industry analysis, and LIVE WEB SEARCH RESULTS, you must: 1) Identify 5-8 competitors or similar products based on the web results and your own knowledge. Provide name, description, target audience, key features, strengths, weaknesses, how it differs from our idea, and threat level. 2) Identify 6-10 online communities/platforms where the target audience actively discusses problems this product solves based on the web results. Provide the platform name, specific community (e.g. r/SaaS), relevance score (0-100), reason for relevance, audience type, and feedback type. IMPORTANT: Rely heavily on the Live Web Search Data to ensure accuracy. If unsure, clearly mark source as inferred. Connect competitor and community insights.';
+    const systemInstruction = 'You are a market research analyst and community intelligence expert. Given a product idea, its industry analysis, and LIVE WEB SEARCH RESULTS, you must: 1) Identify 5-8 competitors or similar products based on the web results and your own knowledge. 2) Identify 6-10 online communities/platforms where the target audience actively discusses problems this product solves based on the web results. Provide the platform name, specific community (e.g. r/SaaS), relevance score (0-100), reason for relevance, audience type, feedback type, and a direct URL to the community (e.g., https://reddit.com/r/SaaS). IMPORTANT: Rely heavily on the Live Web Search Data to ensure accuracy. If unsure, clearly mark source as inferred.';
     
     const userPrompt = `Idea: ${ideaText}
 
@@ -135,9 +136,10 @@ ${communitiesWebData}`;
               reason: { type: "string" },
               audienceType: { type: "string" },
               feedbackType: { type: "string" },
-              communityRules: { type: "string" }
+              communityRules: { type: "string" },
+              url: { type: "string" }
             },
-            required: ["platform", "community", "relevanceScore", "reason", "audienceType", "feedbackType"]
+            required: ["platform", "community", "relevanceScore", "reason", "audienceType", "feedbackType", "url"]
           }
         }
       },

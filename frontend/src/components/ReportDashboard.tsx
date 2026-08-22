@@ -797,8 +797,16 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                          </div>
                          <div className="flex-1 w-full">
                            <div className="flex flex-wrap items-center justify-between gap-4 mb-2">
-                             <h4 className="text-lg font-bold text-gray-900 dark:text-white">
-                               {rec.community} <span className="text-xs font-normal text-gray-500 bg-gray-200 dark:bg-[#333] px-2 py-0.5 rounded">{rec.platform}</span>
+                             <h4 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                               {rec.url ? (
+                                 <a href={rec.url.startsWith('http') ? rec.url : `https://${rec.url}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                                   {rec.community}
+                                   <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                 </a>
+                               ) : (
+                                 rec.community
+                               )}
+                               <span className="text-xs font-normal text-gray-500 bg-gray-200 dark:bg-[#333] px-2 py-0.5 rounded">{rec.platform}</span>
                              </h4>
                              <div className="flex items-center gap-2">
                                <span className="text-xs font-bold text-gray-500 uppercase">Match Score</span>
@@ -893,6 +901,26 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                     placeholder="E.g., What if we charge $99/mo instead of a one-time fee?"
                     className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-900 dark:text-white py-2"
                   />
+                  <button
+                    type="button"
+                    title="Speak"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                      if (!SpeechRecognition) return alert('Speech Recognition not supported in this browser.');
+                      const recognition = new SpeechRecognition();
+                      recognition.continuous = false;
+                      recognition.interimResults = false;
+                      recognition.onresult = (event: any) => {
+                        const transcript = event.results[0][0].transcript;
+                        setBrainstormInput(prev => prev ? prev + ' ' + transcript : transcript);
+                      };
+                      recognition.start();
+                    }}
+                    className="p-2 rounded-full text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-200 dark:hover:bg-[#333] transition-colors flex items-center justify-center shrink-0 group"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:scale-110 transition-transform"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
+                  </button>
                   <button 
                     type="submit"
                     disabled={!brainstormInput.trim() || isBrainstormLoading}
