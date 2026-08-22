@@ -171,82 +171,98 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="px-4 pb-2 flex flex-col gap-4 overflow-hidden border-t border-framer-border dark:border-[#222] pt-4 mt-2"
+                      className="overflow-hidden"
                     >
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Priority Analysis Lens</label>
-                        <div className="flex flex-wrap gap-2">
-                          {[
-                            { id: 'market_fit', icon: '🎯', label: 'Market Fit' },
-                            { id: 'revenue', icon: '💰', label: 'Revenue' },
-                            { id: 'growth', icon: '🚀', label: 'Growth' },
-                            { id: 'risk', icon: '🛡️', label: 'Risk' },
-                            { id: 'ux', icon: '🧑‍🤝‍🧑', label: 'UX' }
-                          ].map(lens => (
-                            <button
-                              key={lens.id}
-                              type="button"
-                              onClick={() => setConfig(prev => ({ ...prev, lens: lens.id as any }))}
-                              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
-                                config.lens === lens.id 
-                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-500/50' 
-                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:text-gray-400 dark:hover:bg-[#333]'
-                              }`}
-                            >
-                              <span>{lens.icon}</span> {lens.label}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
+                      <div className="px-4 pb-4 pt-4 flex flex-col gap-6 text-left border-t border-framer-border dark:border-[#222]">
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Lens */}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Analysis Lens</label>
+                            <div className="flex flex-wrap gap-2">
+                              {[
+                                { id: 'market_fit', icon: '🎯', label: 'Market Fit' },
+                                { id: 'revenue', icon: '💰', label: 'Revenue' },
+                                { id: 'growth', icon: '🚀', label: 'Growth' },
+                                { id: 'risk', icon: '🛡️', label: 'Risk' },
+                                { id: 'ux', icon: '🧑‍🤝‍🧑', label: 'UX' }
+                              ].map(lens => (
+                                <button
+                                  key={lens.id}
+                                  type="button"
+                                  onClick={() => setConfig(prev => ({ ...prev, lens: lens.id as any }))}
+                                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
+                                    config.lens === lens.id 
+                                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-sm' 
+                                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-[#0a0a0a] dark:text-gray-400 dark:border-[#333] dark:hover:bg-[#111]'
+                                  }`}
+                                >
+                                  <span>{lens.icon}</span> {lens.label}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Simulation Depth</label>
-                          <div className="flex bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-lg">
-                            {['quick', 'standard', 'deep'].map(depth => (
-                              <button
-                                key={depth}
-                                type="button"
-                                onClick={() => setConfig(prev => ({ ...prev, depth: depth as any }))}
-                                className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium capitalize transition-all ${
-                                  config.depth === depth 
-                                    ? 'bg-white dark:bg-[#333] text-black dark:text-white shadow-sm' 
-                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
-                                }`}
-                              >
-                                {depth}
-                              </button>
-                            ))}
+                          {/* Depth */}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Simulation Depth</label>
+                            <div className="flex bg-gray-100 dark:bg-[#111] p-1 rounded-xl w-full sm:w-fit border border-transparent dark:border-[#222]">
+                              {['quick', 'standard', 'deep'].map(depth => (
+                                <button
+                                  key={depth}
+                                  type="button"
+                                  onClick={() => setConfig(prev => ({ ...prev, depth: depth as any }))}
+                                  className={`flex-1 sm:flex-none px-4 py-1.5 rounded-lg text-xs font-medium capitalize transition-all ${
+                                    config.depth === depth 
+                                      ? 'bg-white dark:bg-[#222] text-black dark:text-white shadow-sm' 
+                                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                  }`}
+                                >
+                                  {depth}
+                                </button>
+                              ))}
+                            </div>
                           </div>
                         </div>
-                        <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Target Region</label>
-                          <select 
-                            value={config.region}
-                            onChange={(e) => setConfig(prev => ({ ...prev, region: e.target.value as any }))}
-                            className="w-full bg-gray-100 dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-300 border-none rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-                          >
-                            <option value="global">🌍 Global</option>
-                            <option value="north_america">🇺🇸 North America</option>
-                            <option value="europe">🇪🇺 Europe</option>
-                            <option value="south_asia">🇮🇳 South Asia</option>
-                            <option value="east_asia">🇯🇵 East Asia</option>
-                            <option value="latam">🇧🇷 Latin America</option>
-                            <option value="mena">🇦🇪 MENA</option>
-                            <option value="africa">🇿🇦 Africa</option>
-                          </select>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          {/* Region */}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Target Region</label>
+                            <div className="relative">
+                              <select 
+                                value={config.region}
+                                onChange={(e) => setConfig(prev => ({ ...prev, region: e.target.value as any }))}
+                                className="w-full bg-white dark:bg-[#0a0a0a] text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-[#333] rounded-xl p-2.5 focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 outline-none cursor-pointer appearance-none transition-colors"
+                              >
+                                <option value="global">🌍 Global Audience</option>
+                                <option value="north_america">🇺🇸 North America</option>
+                                <option value="europe">🇪🇺 Europe</option>
+                                <option value="south_asia">🇮🇳 South Asia</option>
+                                <option value="east_asia">🇯🇵 East Asia</option>
+                                <option value="latam">🇧🇷 Latin America</option>
+                                <option value="mena">🇦🇪 MENA</option>
+                                <option value="africa">🇿🇦 Africa</option>
+                              </select>
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                                <ChevronDown className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Custom Persona */}
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Custom Segment (Optional)</label>
+                            <input
+                              type="text"
+                              value={config.customPersona || ''}
+                              onChange={(e) => setConfig(prev => ({ ...prev, customPersona: e.target.value }))}
+                              placeholder="e.g. Left-handed dentists..."
+                              className="w-full bg-white dark:bg-[#0a0a0a] text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-[#333] rounded-xl p-2.5 focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 outline-none placeholder-gray-400 dark:placeholder-gray-600 transition-colors"
+                            />
+                          </div>
                         </div>
-                      </div>
-                      
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Custom Persona / Segment (Optional)</label>
-                        <input
-                          type="text"
-                          value={config.customPersona || ''}
-                          onChange={(e) => setConfig(prev => ({ ...prev, customPersona: e.target.value }))}
-                          placeholder="e.g. Left-handed dentists, Gen Z gamers..."
-                          className="w-full bg-gray-100 dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-300 border-none rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none placeholder-gray-400 dark:placeholder-gray-600"
-                        />
+
                       </div>
                     </motion.div>
                   )}
