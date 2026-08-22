@@ -255,10 +255,12 @@ router.get('/history/:ideaId', asyncHandler(async (req: Request, res: Response) 
     return res.status(404).json({ error: 'Idea not found' });
   }
 
-  const personas = await dbService.getPersonas(ideaId);
-  const simulations = await dbService.getSimulations(ideaId);
-  const report = await dbService.getReport(ideaId);
-  const versionHistory = await dbService.getVersionHistory(ideaId);
+  const [personas, simulations, report, versionHistory] = await Promise.all([
+    dbService.getPersonas(ideaId),
+    dbService.getSimulations(ideaId),
+    dbService.getReport(ideaId),
+    dbService.getVersionHistory(ideaId)
+  ]);
 
   return res.json({
     ideaId: idea.id,
