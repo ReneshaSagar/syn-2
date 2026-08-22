@@ -23,6 +23,7 @@ interface ReportDashboardProps {
   onPivotComplete: (result: any) => void;
   onGenerateRedTeam?: () => Promise<void>;
   onReanalyzeWithPriority?: (priority: string[]) => void;
+  onUpdateSimulations?: (simulations: Simulation[]) => void;
 }
 
 export const ReportDashboard: React.FC<ReportDashboardProps> = ({ 
@@ -37,7 +38,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   onRestart, 
   onPivotComplete,
   onGenerateRedTeam,
-  onReanalyzeWithPriority
+  onReanalyzeWithPriority,
+  onUpdateSimulations
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validation' | 'brainstorm' | 'versions' | 'simulate'>('overview');
   
@@ -1111,21 +1113,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                 </div>
              ) : (
                <>
-                 <div className="flex flex-wrap gap-2 items-center">
-                   <span className="text-sm font-semibold text-gray-500 mr-2">Filter:</span>
-                   {['All', 'Direct', 'Indirect', 'Alternative', 'Adjacent'].map(cat => (
-                     <button
-                       key={cat}
-                       onClick={() => setCompetitorFilter(cat)}
-                       className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${competitorFilter === cat ? 'bg-gray-900 text-white dark:bg-white dark:text-black' : 'bg-white text-gray-600 dark:bg-[#111] dark:text-gray-300 border border-gray-200 dark:border-[#333]'}`}
-                     >
-                       {cat}
-                     </button>
-                   ))}
-                 </div>
-
                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   {(competitors || []).filter(c => competitorFilter === 'All' || c.category === competitorFilter).map((comp, idx) => (
+                   {(competitors || []).map((comp, idx) => (
                      <div key={idx} className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-6 shadow-sm flex flex-col relative overflow-hidden">
                        <div className="absolute top-6 right-6 flex gap-2">
                          <Badge type={comp.source === 'researched' ? 'RESEARCHED' : 'ANALYZED'} />
@@ -1670,6 +1659,22 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         initialMessage={initialChatMessage}
         messages={chatDrawerMessages[chatContext?.targetId || 'general'] || []}
         setMessages={(newMessages) => setChatDrawerMessages(prev => ({ ...prev, [chatContext?.targetId || 'general']: newMessages }))}
+        onScoreUpdate={(newScore) => {
+          if (chatContext?.targetId && onUpdateSimulations) {
+            const updatedSims = [...simulations];
+            const simIndex = updatedSims.findIndex(s => s.personaId === chatContext.targetId);
+            if (simIndex !== -1) {
+              updatedSims[simIndex] = {
+                ...updatedSims[simIndex],
+                result: {
+                  ...updatedSims[simIndex].result,
+                  excitementScore: newScore
+                }
+              };
+              onUpdateSimulations(updatedSims);
+            }
+          }
+        }}
       />
 
       {/* Asset Generation Modal */}

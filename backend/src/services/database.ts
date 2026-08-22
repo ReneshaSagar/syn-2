@@ -59,7 +59,22 @@ export const dbService = {
   /**
    * Return all ideas stored locally for history sidebar
    */
-  async getAllIdeasLocally(): Promise<Idea[]> {
+  async getAllIdeas(): Promise<Idea[]> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('ideas')
+        .select('id, raw_text, created_at')
+        .order('created_at', { ascending: false });
+        
+      if (!error && data) {
+        return data.map(d => ({
+          id: d.id,
+          rawText: d.raw_text,
+          createdAt: new Date(d.created_at)
+        } as Idea));
+      }
+    }
+
     return Object.values(localStore.data.ideas).sort((a, b) => {
       const dateA = new Date(a.createdAt).getTime();
       const dateB = new Date(b.createdAt).getTime();

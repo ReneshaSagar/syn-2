@@ -135,8 +135,29 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
   let competitors: any[] | undefined = undefined;
   let communityRecommendations: any[] | undefined = undefined;
 
+  const existingReport = await dbService.getReport(ideaId);
+
+  // If a report already exists, we are re-analyzing, so snapshot the old state first
+  if (existingReport) {
+    const history = await dbService.getVersionHistory(ideaId);
+    const versionNumber = history.length + 1;
+    await dbService.saveVersion(ideaId, {
+      versionNumber,
+      ideaText: idea.rawText,
+      timestamp: new Date().toISOString(),
+      overallInterest: existingReport.insights.overallInterestScore,
+      adoptionProbability: existingReport.insights.adoptionProbability,
+      segmentBreakdown: existingReport.insights.segmentBreakdown?.map((s: any) => ({ segment: s.segmentName, interest: s.avgInterest })) || [],
+      topConcerns: existingReport.insights.topConcerns,
+      confidenceScore: existingReport.insights.confidence?.score
+    });
+  }
+
   try {
-    if (idea.analysis) {
+    if (existingReport && existingReport.competitors && existingReport.competitors.length > 0) {
+      competitors = existingReport.competitors;
+      communityRecommendations = existingReport.communityRecommendations;
+    } else if (idea.analysis) {
       const researchResult = await researchAgent.research(idea.rawText, idea.analysis, idea.config);
       competitors = researchResult.competitors;
       communityRecommendations = researchResult.communityRecommendations;
@@ -149,7 +170,11 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
   const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, undefined, competitors, communityRecommendations, idea.config);
   const savedReport = await dbService.saveReport(ideaId, insights, reportMarkdown, {
     competitors,
-    communityRecommendations
+    communityRecommendations,
+    chatMemory: existingReport?.chatMemory,
+    debateMemory: existingReport?.debateMemory,
+    versionHistory: existingReport?.versionHistory,
+    redTeamReport: existingReport?.redTeamReport
   });
 
   return res.json({
@@ -160,7 +185,8 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
     redTeamReport: null,
     competitors,
     communityRecommendations,
-    segmentAnalysis: insights.segmentBreakdown
+    segmentAnalysis: insights.segmentBreakdown,
+    versionHistory: await dbService.getVersionHistory(ideaId)
   });
 }));
 
@@ -234,7 +260,7 @@ router.post('/full-analysis', asyncHandler(async (req: Request, res: Response) =
  * Returns all saved ideas from the database
  */
 router.get('/history', asyncHandler(async (req: Request, res: Response) => {
-  const ideas = await dbService.getAllIdeasLocally();
+  const ideas = await dbService.getAllIdeas();
   // Return just the lightweight data
   const history = ideas.map(idea => ({
     id: idea.id,

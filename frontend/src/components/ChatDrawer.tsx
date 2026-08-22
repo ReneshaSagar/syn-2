@@ -17,9 +17,10 @@ interface ChatDrawerProps {
   initialMessage?: string;
   messages: ChatMessage[];
   setMessages: (messages: ChatMessage[]) => void;
+  onScoreUpdate?: (newScore: number) => void;
 }
 
-export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, ideaId, context, initialMessage, messages, setMessages }) => {
+export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, ideaId, context, initialMessage, messages, setMessages, onScoreUpdate }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
@@ -55,6 +56,10 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, ideaId,
     try {
       const result = await sendChatMessage(ideaId, newMessages, { type: context?.type || 'general', targetId: context?.targetId });
       setMessages([...newMessages, { role: 'assistant', content: result.response }]);
+      
+      if (result.newScore !== undefined && onScoreUpdate) {
+        onScoreUpdate(result.newScore);
+      }
     } catch (err) {
       setMessages([...newMessages, { role: 'assistant', content: 'Sorry, I encountered a network error. Please try again.' }]);
     } finally {

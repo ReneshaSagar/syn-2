@@ -125,29 +125,20 @@ function App() {
       setAppState('simulation');
       
       const ideaId = analysis.ideaId; // Wait, analysis in frontend might not have ideaId directly on the object.
-      // Wait, is ideaId on analysis? Let's check `startSimulationProcess`. It's `analysisResult.ideaId`.
-      // Where do we store ideaId? `report.ideaId` or `analysis.id`?
-      // Actually `report.ideaId` exists.
       const currentIdeaId = report?.ideaId;
       if (!currentIdeaId) throw new Error("No idea ID found");
 
-      // Step 2: Generate Audience
-      setSimStatus('generating');
-      const audienceResult = await generateAudience(currentIdeaId, config);
-      setPersonas(audienceResult.personas);
-
-      // Step 3: Simulate Reactions
-      setSimStatus('simulating');
-      const simResult = await simulate(currentIdeaId, config);
-      setSimulations(simResult.simulations);
-
-      // Step 4: Generate Report
-      setSimStatus('done');
+      // Step 2: Regenerate Report (insights, math, bias)
+      setSimStatus('reporting');
       const reportResult = await generateReport(currentIdeaId, config);
       setReport(reportResult.report);
+      
+      // Update UI with new insights while preserving the rest
+      setAppState('report');
       if (reportResult.redTeamReport) setRedTeamReport(reportResult.redTeamReport);
       if (reportResult.competitors) setCompetitors(reportResult.competitors);
       if (reportResult.communityRecommendations) setCommunityRecommendations(reportResult.communityRecommendations);
+      if (reportResult.versionHistory) setVersionHistory(reportResult.versionHistory);
       
       setAppState('report');
     } catch (error) {
@@ -239,6 +230,7 @@ function App() {
             setRedTeamReport(res.redTeamReport);
           }}
           onReanalyzeWithPriority={reanalyzeWithPriority}
+          onUpdateSimulations={setSimulations}
           onPivotComplete={(result) => {
             if (report) {
               setVersionHistory(result.versionHistory || []);

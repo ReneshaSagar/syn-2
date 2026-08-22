@@ -92,6 +92,9 @@ router.post('/pivot', asyncHandler(async (req: Request, res: Response) => {
     simulations: finalState.simulations,
     insights: finalState.insights,
     report: finalState.report,
+    redTeamReport: finalState.redTeamReport,
+    competitors: finalState.competitors,
+    communityRecommendations: finalState.communityRecommendations,
     versionHistory: await dbService.getVersionHistory(finalState.ideaId || ideaId)
   });
 }));

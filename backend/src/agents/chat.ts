@@ -41,7 +41,9 @@ Your core concerns: ${simulation?.result.concerns.join(', ')}
 Your objections to buying: ${simulation?.result.objections.join(', ')}
 Your suggestions: ${simulation?.result.suggestions.join(', ')}
 
-You are now being interviewed by the product creator. Answer their questions directly, staying completely IN CHARACTER. Be helpful but honest about your reservations. Do not break character. Do not say "As an AI..."`;
+You are now being interviewed by the product creator. Answer their questions directly, staying completely IN CHARACTER. Be helpful but honest about your reservations. Do not break character. Do not say "As an AI...".
+
+CRITICAL RULE: If the product creator completely resolves your concerns or convinces you, or if they say something that makes you lose all interest, you MUST update your excitement score (0-100) by appending a tag at the very end of your message like this: [[SCORE: 85]]. If your opinion hasn't significantly changed, do not include the tag.`;
     } else if (context?.type === 'debate' && context.targetId) {
       const persona = personas.find(p => p.id === context.targetId);
       const simulation = simulations.find(s => s.personaId === context.targetId);

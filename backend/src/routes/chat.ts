@@ -25,7 +25,27 @@ router.post('/chat', asyncHandler(async (req: Request, res: Response) => {
 
   console.log(`API: Processing chat message for idea ${ideaId}... context: ${JSON.stringify(context)}`);
   
-  const responseText = await chatAgent.handleChat(ideaId, messages, context);
+  let responseText = await chatAgent.handleChat(ideaId, messages, context);
+  
+  let newScore: number | undefined = undefined;
+
+  // Extract [[SCORE: X]] tag if present
+  const scoreRegex = /\[\[SCORE:\s*(\d+)\]\]/i;
+  const match = responseText.match(scoreRegex);
+  if (match && match[1]) {
+    newScore = parseInt(match[1], 10);
+    responseText = responseText.replace(scoreRegex, '').trim(); // Remove it from the text seen by the user
+
+    if (context?.type === 'persona' && context.targetId) {
+      // Update the simulation in the database
+      const simulations = await dbService.getSimulations(ideaId);
+      const sim = simulations.find(s => s.personaId === context.targetId);
+      if (sim) {
+        sim.result.excitementScore = newScore;
+        await dbService.saveSimulations(ideaId, simulations);
+      }
+    }
+  }
   
   // Save chat memory
   const report = await dbService.getReport(ideaId);
@@ -44,7 +64,8 @@ router.post('/chat', asyncHandler(async (req: Request, res: Response) => {
 
   return res.json({
     message: 'Chat response generated.',
-    response: responseText
+    response: responseText,
+    newScore // Send back to frontend to dynamically update the UI
   });
 }));
 
