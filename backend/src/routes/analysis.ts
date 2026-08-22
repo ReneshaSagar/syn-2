@@ -142,26 +142,50 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
     console.error('API: Research agent failed', error);
   }
 
-  try {
-    redTeamReport = await redTeamAgent.analyze(idea.rawText, personas, simulations, insights.segmentBreakdown);
-  } catch (error) {
-    console.error('API: Red Team agent failed', error);
-  }
-
   console.log(`API: Compiling final report markdown...`);
-  const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, redTeamReport, competitors, communityRecommendations);
+  const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, undefined, competitors, communityRecommendations);
   const savedReport = await dbService.saveReport(ideaId, insights, reportMarkdown);
+
+  // We save research directly to the database alongside report here so it can be loaded on history
+  // Using an updated saveReport function or appending to the idea object. For now we return it.
 
   return res.json({
     message: 'Insights and report generated successfully.',
     ideaId,
     insights,
     report: savedReport,
-    redTeamReport,
+    redTeamReport: null,
     competitors,
     communityRecommendations,
     segmentAnalysis: insights.segmentBreakdown
   });
+}));
+
+/**
+ * POST /generate-red-team
+ * Explicitly triggers a Red Team analysis on demand.
+ */
+router.post('/generate-red-team', asyncHandler(async (req: Request, res: Response) => {
+  const { ideaId } = req.body;
+  if (!ideaId) return res.status(400).json({ error: 'ideaId required' });
+
+  const idea = await dbService.getIdea(ideaId);
+  const personas = await dbService.getPersonas(ideaId);
+  const simulations = await dbService.getSimulations(ideaId);
+  const report = await dbService.getReport(ideaId);
+
+  if (!idea || !personas || !simulations || !report) {
+    return res.status(400).json({ error: 'Incomplete state to run red team.' });
+  }
+
+  console.log(`API: Generating On-Demand Red Team Analysis for ${ideaId}`);
+  const redTeamReport = await redTeamAgent.analyze(idea.rawText, personas, simulations, report.insights.segmentBreakdown);
+
+  // Save the red team report into the database alongside the existing report
+  // (In a real DB you'd update the row; for FileStoreDB we can add a method or just return it and let frontend handle it)
+  // For now we'll just return it so the frontend can display it.
+  
+  return res.json({ redTeamReport });
 }));
 
 /**

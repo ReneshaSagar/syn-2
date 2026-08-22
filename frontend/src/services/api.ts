@@ -205,6 +205,11 @@ export const generateReport = async (ideaId: string) => {
   return response.data;
 };
 
+export const generateRedTeamAnalysis = async (ideaId: string) => {
+  const response = await axios.post(`${API_URL}/generate-red-team`, { ideaId });
+  return response.data;
+};
+
 export const fullAnalysis = async (idea: string) => {
   const response = await axios.post(`${API_URL}/full-analysis`, { idea });
   return response.data;

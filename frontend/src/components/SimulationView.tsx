@@ -60,7 +60,7 @@ const AnalysisPhase: React.FC<{ status: string, analysis: IdeaAnalysis | null }>
               </div>
               <div>
                 <p className={`font-medium ${status === 'simulating' ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
-                  Running focus group session & competitive intelligence
+                  Running Synthetic R&D Focus Group
                 </p>
               </div>
             </motion.div>
@@ -252,7 +252,7 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
       <div className="z-10 text-center mb-6 space-y-3">
         <div className="inline-flex items-center justify-center gap-3 bg-white dark:bg-[#111] px-5 py-2.5 rounded-full shadow-sm border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-300 font-medium text-sm">
           {status !== 'done' && <Loader2 className="w-4 h-4 animate-spin text-gray-500" />}
-          <span>{status === 'simulating' ? '🎙️ Focus group in session...' : '📋 Compiling insights report...'}</span>
+          <span>{status === 'generating_audience' ? '🧬 Assembling your Synthetic Audience...' : (status === 'simulating' ? '🎙️ R&D Focus Group in session...' : '📑 Compiling final R&D report...')}</span>
         </div>
         <p style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '8px' }} className="text-gray-400 dark:text-gray-500">
           {displayPersonas.length} TEAM MEMBERS ASSEMBLED

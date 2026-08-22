@@ -19,7 +19,8 @@ interface ReportDashboardProps {
   communityRecommendations?: CommunityRecommendation[];
   versionHistory?: VersionSnapshot[];
   onRestart: () => void;
-  onPivotComplete?: (result: any) => void;
+  onPivotComplete: (result: any) => void;
+  onGenerateRedTeam?: () => Promise<void>;
 }
 
 export const ReportDashboard: React.FC<ReportDashboardProps> = ({ 
@@ -32,10 +33,13 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   communityRecommendations = [],
   versionHistory = [],
   onRestart, 
-  onPivotComplete 
+  onPivotComplete,
+  onGenerateRedTeam
 }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validate' | 'brainstorm' | 'versions'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validation' | 'brainstorm' | 'versions' | 'simulate'>('overview');
   
+  const [isGeneratingRedTeam, setIsGeneratingRedTeam] = useState(false);
+
   // Brainstorm Chat State
   const [brainstormMessages, setBrainstormMessages] = useState<{role: 'user'|'assistant', content: string}[]>([
     { role: 'assistant', content: "Hello! I'm your Synthetic R&D Head. Let's discuss the simulation results and figure out how to pivot or improve your idea. What are you thinking?" }
@@ -251,6 +255,18 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
     <div className="min-h-screen p-8 bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-gray-100 selection:bg-blue-100 dark:selection:bg-blue-900/50 selection:text-blue-900 dark:selection:text-blue-100 font-['Outfit'] transition-colors duration-500 pb-32">
       <div className="max-w-7xl mx-auto space-y-10 pt-8">
         
+        {/* Top Navigation Bar */}
+        <div className="flex border-b border-gray-100 dark:border-[#222] px-6 py-4 overflow-x-auto hide-scrollbar gap-2 sticky top-0 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md z-40">
+          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={PieChart}>R&D Summary</TabButton>
+          <TabButton active={activeTab === 'audience'} onClick={() => setActiveTab('audience')} icon={Users}>Synthetic Focus Group</TabButton>
+          <TabButton active={activeTab === 'simulate'} onClick={() => setActiveTab('simulate')} icon={MessageSquare}>Interviews</TabButton>
+          <TabButton active={activeTab === 'brainstorm'} onClick={() => setActiveTab('brainstorm')} icon={Sparkles}>Lead Researcher</TabButton>
+          <TabButton active={activeTab === 'validation'} onClick={() => setActiveTab('validation')} icon={MapPin}>Where to Validate</TabButton>
+          <TabButton active={activeTab === 'redteam'} onClick={() => setActiveTab('redteam')} icon={ShieldAlert}>Red Team</TabButton>
+          <TabButton active={activeTab === 'competitors'} onClick={() => setActiveTab('competitors')} icon={Target}>Competitors</TabButton>
+          <TabButton active={activeTab === 'versions'} onClick={() => setActiveTab('versions')} icon={History}>History ({versionHistory.length})</TabButton>
+        </div>
+
         {/* Header Section */}
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6">
           <div className="space-y-4">
@@ -603,10 +619,37 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         {activeTab === 'redteam' && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
             {!redTeamReport ? (
-              <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-12 text-center">
-                <ShieldAlert className="w-16 h-16 mx-auto text-gray-300 dark:text-gray-700 mb-4" />
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Red Team Analysis Not Available</h3>
-                <p className="text-gray-500 mt-2">Run a full red team analysis to see adversarial feedback.</p>
+              <div className="bg-white dark:bg-[#0a0a0a] border border-red-100 dark:border-red-900/30 rounded-[2rem] p-12 text-center max-w-3xl mx-auto shadow-sm">
+                <ShieldAlert className="w-20 h-20 mx-auto text-red-500 mb-6" />
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Adversarial R&D Unit</h3>
+                <p className="text-gray-600 dark:text-gray-400 text-lg mb-8 leading-relaxed">
+                  The Red Team is your adversarial R&D unit. They will aggressively attack your business model, highlight regulatory risks, expose hidden assumptions, and find the fatal flaws <b>before</b> you launch.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!onGenerateRedTeam) return;
+                    setIsGeneratingRedTeam(true);
+                    try {
+                      await onGenerateRedTeam();
+                    } catch(err) {
+                      alert('Failed to generate red team analysis.');
+                    } finally {
+                      setIsGeneratingRedTeam(false);
+                    }
+                  }}
+                  disabled={isGeneratingRedTeam}
+                  className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white px-8 py-4 rounded-full font-bold text-lg transition-colors inline-flex items-center gap-2"
+                >
+                  {isGeneratingRedTeam ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" /> Analyzing Risks...
+                    </>
+                  ) : (
+                    <>
+                      <Shield className="w-5 h-5" /> Generate Red Team Report
+                    </>
+                  )}
+                </button>
               </div>
             ) : (
               <>

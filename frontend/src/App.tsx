@@ -190,6 +190,11 @@ function App() {
           communityRecommendations={communityRecommendations}
           versionHistory={versionHistory}
           onRestart={restart} 
+          onGenerateRedTeam={async () => {
+            const { generateRedTeamAnalysis } = await import('./services/api');
+            const res = await generateRedTeamAnalysis(report.ideaId);
+            setRedTeamReport(res.redTeamReport);
+          }}
           onPivotComplete={(result) => {
             if (report) {
               setVersionHistory(result.versionHistory || []);

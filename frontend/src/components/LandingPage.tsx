@@ -56,13 +56,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
           >
             <div className="flex justify-between items-center mb-8 whitespace-nowrap w-72">
               <div className="flex items-center gap-2 text-framer-muted dark:text-gray-400">
-                <Clock className="w-5 h-5" />
-                <h2 className="text-sm font-semibold tracking-wide">Recent Validations</h2>
+                <History className="w-5 h-5" />
+                <h2 className="text-sm font-bold tracking-wide uppercase">Past R&D Reports</h2>
               </div>
             </div>
             
             <div className="space-y-4 w-72 pb-12">
-              {history.length === 0 ? (
+            {history.length === 0 ? (
                 <div className="text-center py-10 px-4 rounded-[2rem] bg-white/50 dark:bg-[#0a0a0a]/50 border border-dashed border-framer-border dark:border-[#333]">
                   <p className="text-framer-muted dark:text-gray-500 text-sm">No past ideas yet.</p>
                   <p className="text-gray-400 dark:text-gray-600 text-xs mt-1">Simulate an idea to see it here.</p>
@@ -131,7 +131,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-[#111] shadow-sm border border-framer-border dark:border-[#222] text-sm font-medium text-gray-600 dark:text-gray-300 mb-4 transition-colors duration-500 relative">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>Introducing AI Simulations</span>
+              <span>✨ Meet your instant R&D team</span>
             </div>
 
             <h1 className="text-6xl md:text-8xl font-semibold tracking-tight text-framer-text dark:text-white leading-[1.1] transition-colors duration-500 relative">
@@ -139,7 +139,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
             </h1>
             
             <p className="text-xl md:text-2xl text-framer-muted dark:text-gray-400 font-light tracking-wide max-w-2xl mx-auto leading-relaxed transition-colors duration-500 relative">
-              Generate a synthetic audience to validate your startup, product, or feature concept instantly.
+              Spawn a Synthetic Audience and get your own instant R&D team to stress-test your startup before you spend a dime.
             </p>
 
             <motion.form 
