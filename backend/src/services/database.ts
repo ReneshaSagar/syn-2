@@ -296,6 +296,7 @@ export const dbService = {
       competitors?: Competitor[];
       communityRecommendations?: CommunityRecommendation[];
       versionHistory?: VersionSnapshot[];
+      chatMemory?: Record<string, { role: 'user'|'assistant', content: string }[]>;
     }
   ): Promise<Report> {
     const id = crypto.randomUUID();
@@ -308,6 +309,7 @@ export const dbService = {
       competitors: extras?.competitors,
       communityRecommendations: extras?.communityRecommendations,
       versionHistory: extras?.versionHistory,
+      chatMemory: extras?.chatMemory,
       createdAt: new Date()
     };
 

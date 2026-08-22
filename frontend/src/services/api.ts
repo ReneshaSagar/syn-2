@@ -170,6 +170,7 @@ export interface Report {
   competitors?: Competitor[];
   communityRecommendations?: CommunityRecommendation[];
   versionHistory?: VersionSnapshot[];
+  chatMemory?: Record<string, { role: 'user'|'assistant', content: string }[]>;
 }
 
 // Full pipeline result (from /full-analysis or /pivot)

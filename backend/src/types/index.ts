@@ -189,6 +189,7 @@ export interface Report {
   competitors?: Competitor[];
   communityRecommendations?: CommunityRecommendation[];
   versionHistory?: VersionSnapshot[];
+  chatMemory?: Record<string, { role: 'user'|'assistant', content: string }[]>;
   createdAt: Date;
 }
 

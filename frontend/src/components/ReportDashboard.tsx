@@ -52,9 +52,20 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   }, [analysis]);
 
   // Brainstorm Chat State
-  const [brainstormMessages, setBrainstormMessages] = useState<{role: 'user'|'assistant', content: string}[]>([
-    { role: 'assistant', content: "Hello! I'm your Synthetic R&D Head. Let's discuss the simulation results and figure out how to pivot or improve your idea. What are you thinking?" }
-  ]);
+  const defaultBrainstormMessage = { role: 'assistant' as const, content: "Hello! I'm your Synthetic R&D Head. Let's discuss the simulation results and figure out how to pivot or improve your idea. What are you thinking?" };
+  
+  const [brainstormMessages, setBrainstormMessages] = useState<{role: 'user'|'assistant', content: string}[]>(
+    report?.chatMemory?.['general'] || [defaultBrainstormMessage]
+  );
+  
+  useEffect(() => {
+    if (report?.chatMemory?.['general']) {
+      setBrainstormMessages(report.chatMemory['general']);
+    } else {
+      setBrainstormMessages([defaultBrainstormMessage]);
+    }
+  }, [report?.ideaId, report?.chatMemory]);
+
   const [brainstormInput, setBrainstormInput] = useState('');
   const [isBrainstormLoading, setIsBrainstormLoading] = useState(false);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -136,7 +147,14 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<{ type: 'persona' | 'general'; targetId?: string; personaName?: string }>();
   const [initialChatMessage, setInitialChatMessage] = useState<string>('');
-  const [chatDrawerMessages, setChatDrawerMessages] = useState<Record<string, { role: 'user'|'assistant', content: string }[]>>({});
+  const [chatDrawerMessages, setChatDrawerMessages] = useState<Record<string, { role: 'user'|'assistant', content: string }[]>>(report?.chatMemory || {});
+
+  // Sync state if report changes (e.g. loading history)
+  useEffect(() => {
+    if (report?.chatMemory) {
+      setChatDrawerMessages(report.chatMemory);
+    }
+  }, [report?.ideaId, report?.chatMemory]);
 
   // Floating Cursor State is disabled for now
 

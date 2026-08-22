@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { chatAgent } from '../agents/chat';
+import { dbService } from '../services/database';
 
 const router = Router();
 
@@ -25,6 +26,21 @@ router.post('/chat', asyncHandler(async (req: Request, res: Response) => {
   console.log(`API: Processing chat message for idea ${ideaId}... context: ${JSON.stringify(context)}`);
   
   const responseText = await chatAgent.handleChat(ideaId, messages, context);
+  
+  // Save chat memory
+  const report = await dbService.getReport(ideaId);
+  if (report) {
+    if (!report.chatMemory) report.chatMemory = {};
+    const memoryKey = context?.targetId || 'general';
+    report.chatMemory[memoryKey] = [...messages, { role: 'assistant', content: responseText }];
+    await dbService.saveReport(ideaId, report.insights, report.fullReportMarkdown, {
+      redTeamReport: report.redTeamReport,
+      competitors: report.competitors,
+      communityRecommendations: report.communityRecommendations,
+      versionHistory: report.versionHistory,
+      chatMemory: report.chatMemory
+    });
+  }
 
   return res.json({
     message: 'Chat response generated.',
