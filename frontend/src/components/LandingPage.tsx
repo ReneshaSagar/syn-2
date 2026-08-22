@@ -237,6 +237,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                           </select>
                         </div>
                       </div>
+                      
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Custom Persona / Segment (Optional)</label>
+                        <input
+                          type="text"
+                          value={config.customPersona || ''}
+                          onChange={(e) => setConfig(prev => ({ ...prev, customPersona: e.target.value }))}
+                          placeholder="e.g. Left-handed dentists, Gen Z gamers..."
+                          className="w-full bg-gray-100 dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-300 border-none rounded-lg p-3 focus:ring-2 focus:ring-blue-500 outline-none placeholder-gray-400 dark:placeholder-gray-600"
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

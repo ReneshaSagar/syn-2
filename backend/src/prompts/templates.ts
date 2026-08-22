@@ -32,10 +32,15 @@ const REGION_LABELS: Record<string, string> = {
 
 export function getLensInstruction(config?: SimulationConfig): string {
   const c = config || DEFAULT_CONFIG;
+  let customStr = '';
+  if (c.customPersona && c.customPersona.trim()) {
+    customStr = `\nCUSTOM AUDIENCE REQUIREMENT: You MUST include "${c.customPersona.trim()}" in your target audience and personas.`;
+  }
+
   return `
 PRIORITY LENS: ${LENS_DESCRIPTIONS[c.lens] || LENS_DESCRIPTIONS.market_fit}
 ANALYSIS DEPTH: ${DEPTH_DESCRIPTIONS[c.depth] || DEPTH_DESCRIPTIONS.standard}
-GEOGRAPHIC FOCUS: ${REGION_LABELS[c.region] || REGION_LABELS.global}
+GEOGRAPHIC FOCUS: ${REGION_LABELS[c.region] || REGION_LABELS.global}${customStr}
 Weight your entire analysis, persona reactions, concerns, rankings, and recommendations HEAVILY toward the priority lens above.`;
 }
 
@@ -52,11 +57,15 @@ export function getPersonaCount(config?: SimulationConfig): number {
 
 export function getIdeaAnalyzerSystem(config?: SimulationConfig): string {
   const count = getPersonaCount(config);
+  let customPersonaStr = '';
+  if (config?.customPersona && config.customPersona.trim() !== '') {
+    customPersonaStr = `\nCRITICAL REQUIREMENT: The user specifically requested a custom audience segment: "${config.customPersona.trim()}". You MUST include this specific segment in your audienceComposition, allocating a reasonable portion of the ${count} personas to it.`;
+  }
   return `You are a startup CTO, veteran product manager, and industry analyst.
 Your task is to dissect a user's submitted idea (which could be a startup idea, feature, ad, or landing page) and extract structured metadata.
 Analyze the industry, primary target audience, secondary stakeholders, business type (B2B, B2C, SaaS, etc.), key potential competitors, and the key value proposition.
 Ensure your analysis is realistic and objective. Don't add hype.
-Determine the optimal composition of a ${count}-person synthetic audience panel. Identify distinct segments (e.g. for an AI study planner: ${Math.round(count*0.4)} Students, ${Math.round(count*0.2)} Educators, ${Math.round(count*0.15)} Founders, ${Math.round(count*0.15)} Engineers, ${Math.round(count*0.1)} Skeptics). Each segment needs a name, count, and description. Counts must sum to exactly ${count}.
+Determine the optimal composition of a ${count}-person synthetic audience panel. Identify distinct segments (e.g. for an AI study planner: ${Math.round(count*0.4)} Students, ${Math.round(count*0.2)} Educators, etc.). Each segment needs a name, count, and description. Counts must sum to exactly ${count}.${customPersonaStr}
 If the idea is too vague, short, or lacks enough detail for you to determine a highly specific industry and target audience, you MUST set needsMoreInfo to true, and provide 2-3 clarificationQuestions asking the user for the specific missing context. If it's detailed enough to proceed, set needsMoreInfo to false.
 ${getLensInstruction(config)}`;
 }

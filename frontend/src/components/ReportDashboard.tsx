@@ -284,6 +284,11 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <span className="px-2.5 py-1 bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium border border-gray-200 dark:border-[#333]">
                 {analysis?.config?.region ? `Region: ${analysis.config.region.replace('_', ' ').toUpperCase()}` : 'Region: GLOBAL'}
               </span>
+              {analysis?.config?.customPersona && (
+                <span className="px-2.5 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-md text-xs font-medium border border-blue-200 dark:border-blue-800/50">
+                  Custom: {analysis.config.customPersona}
+                </span>
+              )}
             </div>
           </div>
           <div className="flex gap-4 items-center">

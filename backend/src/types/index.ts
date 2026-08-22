@@ -4,12 +4,14 @@ export interface SimulationConfig {
   lens: 'market_fit' | 'revenue' | 'growth' | 'risk' | 'ux';
   depth: 'quick' | 'standard' | 'deep';
   region: 'global' | 'north_america' | 'europe' | 'south_asia' | 'east_asia' | 'latam' | 'mena' | 'africa';
+  customPersona?: string;
 }
 
 export const DEFAULT_CONFIG: SimulationConfig = {
   lens: 'market_fit',
   depth: 'standard',
-  region: 'global'
+  region: 'global',
+  customPersona: ''
 };
 
 export interface AudienceSegment {
