@@ -276,7 +276,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
             <div className="flex flex-wrap gap-2 pt-2">
               <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center mr-1">R&D Settings:</span>
               <span className="px-2.5 py-1 bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium border border-gray-200 dark:border-[#333]">
-                {analysis?.config?.lens ? `Lens: ${analysis.config.lens.replace('_', ' ').toUpperCase()}` : 'Lens: MARKET FIT'}
+                {analysis?.config?.lens ? `Lens: ${Array.isArray(analysis.config.lens) ? analysis.config.lens.map(l => l.replace('_', ' ').toUpperCase()).join(' & ') : (analysis.config.lens as string).replace('_', ' ').toUpperCase()}` : 'Lens: MARKET FIT'}
               </span>
               <span className="px-2.5 py-1 bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium border border-gray-200 dark:border-[#333]">
                 {analysis?.config?.depth ? `Depth: ${analysis.config.depth.toUpperCase()}` : 'Depth: STANDARD'}

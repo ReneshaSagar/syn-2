@@ -36,12 +36,16 @@ export function getLensInstruction(config?: SimulationConfig): string {
   if (c.customPersona && c.customPersona.trim()) {
     customStr = `\nCUSTOM AUDIENCE REQUIREMENT: You MUST include "${c.customPersona.trim()}" in your target audience and personas.`;
   }
+  
+  const lenses = Array.isArray(c.lens) ? c.lens : [(c.lens || 'market_fit')];
+  const lensTexts = lenses.map(l => LENS_DESCRIPTIONS[l] || LENS_DESCRIPTIONS.market_fit).join('\nAND ');
 
   return `
-PRIORITY LENS: ${LENS_DESCRIPTIONS[c.lens] || LENS_DESCRIPTIONS.market_fit}
+PRIORITY LENSES: 
+${lensTexts}
 ANALYSIS DEPTH: ${DEPTH_DESCRIPTIONS[c.depth] || DEPTH_DESCRIPTIONS.standard}
 GEOGRAPHIC FOCUS: ${REGION_LABELS[c.region] || REGION_LABELS.global}${customStr}
-Weight your entire analysis, persona reactions, concerns, rankings, and recommendations HEAVILY toward the priority lens above.`;
+Weight your entire analysis, persona reactions, concerns, rankings, and recommendations HEAVILY toward the priority lenses above.`;
 }
 
 export function getPersonaCount(config?: SimulationConfig): number {

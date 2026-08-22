@@ -142,7 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
             </h1>
             
             <p className="text-xl md:text-2xl text-framer-muted dark:text-gray-400 font-light tracking-wide max-w-2xl mx-auto leading-relaxed transition-colors duration-500 relative">
-              Spawn a Synthetic Audience and get your own instant R&D team to stress-test your startup before you spend a dime.
+              Generate a Synthetic Audience and get your own instant R&D team to stress-test your startup before you spend a dime.
             </p>
 
             <motion.form 
@@ -178,7 +178,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Lens */}
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Analysis Lens</label>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Analysis Lens (Select up to 2)</label>
                             <div className="flex flex-wrap gap-2">
                               {[
                                 { id: 'market_fit', icon: Target, label: 'Market Fit' },
@@ -188,13 +188,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                                 { id: 'ux', icon: Users, label: 'UX' }
                               ].map(lens => {
                                 const Icon = lens.icon;
+                                const isSelected = config.lens.includes(lens.id as any);
                                 return (
                                   <button
                                     key={lens.id}
                                     type="button"
-                                    onClick={() => setConfig(prev => ({ ...prev, lens: lens.id as any }))}
+                                    onClick={() => {
+                                      setConfig(prev => {
+                                        const currentLenses = prev.lens;
+                                        if (currentLenses.includes(lens.id as any)) {
+                                          // Prevent deselecting if it's the last one
+                                          if (currentLenses.length === 1) return prev;
+                                          return { ...prev, lens: currentLenses.filter(l => l !== lens.id) };
+                                        } else {
+                                          // Limit to 2 lenses
+                                          if (currentLenses.length >= 2) {
+                                            return { ...prev, lens: [currentLenses[1], lens.id as any] };
+                                          }
+                                          return { ...prev, lens: [...currentLenses, lens.id as any] };
+                                        }
+                                      });
+                                    }}
                                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
-                                      config.lens === lens.id 
+                                      isSelected 
                                         ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-sm' 
                                         : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-[#0a0a0a] dark:text-gray-400 dark:border-[#333] dark:hover:bg-[#111]'
                                     }`}

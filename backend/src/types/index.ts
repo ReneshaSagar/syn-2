@@ -1,14 +1,14 @@
 // TypeScript Types for Synthetic Audience
 
 export interface SimulationConfig {
-  lens: 'market_fit' | 'revenue' | 'growth' | 'risk' | 'ux';
+  lens: Array<'market_fit' | 'revenue' | 'growth' | 'risk' | 'ux'>;
   depth: 'quick' | 'standard' | 'deep';
   region: 'global' | 'north_america' | 'europe' | 'south_asia' | 'east_asia' | 'latam' | 'mena' | 'africa';
   customPersona?: string;
 }
 
 export const DEFAULT_CONFIG: SimulationConfig = {
-  lens: 'market_fit',
+  lens: ['market_fit'],
   depth: 'standard',
   region: 'global',
   customPersona: ''
