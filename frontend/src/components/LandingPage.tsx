@@ -14,7 +14,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
   const [showSettings, setShowSettings] = useState(false);
   const [config, setConfig] = useState<SimulationConfig>(DEFAULT_CONFIG);
   const [history, setHistory] = useState<any[]>([]);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
