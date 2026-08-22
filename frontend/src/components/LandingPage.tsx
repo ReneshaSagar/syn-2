@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History } from 'lucide-react';
 import { fetchHistory } from '../services/api';
 
 interface LandingPageProps {
