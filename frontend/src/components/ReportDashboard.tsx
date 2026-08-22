@@ -286,11 +286,105 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
     if (!printWindow) return;
     
     const reportContent = document.getElementById('hidden-report-content');
+    const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     
-    printWindow.document.write('<html><head><title>Simulation Report</title>');
-    printWindow.document.write('<style>body { font-family: system-ui, -apple-system, sans-serif; line-height: 1.6; padding: 40px; color: #333; max-width: 800px; margin: 0 auto; } h1, h2, h3 { color: #111; } pre { background: #f4f4f4; padding: 15px; border-radius: 5px; } blockquote { border-left: 4px solid #ccc; margin-left: 0; padding-left: 15px; color: #666; } table { width: 100%; border-collapse: collapse; margin-bottom: 20px; } th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }</style>');
+    printWindow.document.write('<html><head><title>Synthetic R&D Report</title>');
+    printWindow.document.write(`
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { 
+          font-family: 'Inter', system-ui, -apple-system, sans-serif; 
+          line-height: 1.7; 
+          color: #1f2937; 
+          max-width: 900px; 
+          margin: 0 auto; 
+          padding: 40px; 
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        
+        /* Print-specific rules to prevent abrupt cuts */
+        @media print {
+          @page { margin: 20mm; }
+          body { padding: 0 !important; }
+          h1, h2, h3, h4, h5, h6 { page-break-after: avoid; break-after: avoid; }
+          img { page-break-inside: avoid; break-inside: avoid; max-width: 100% !important; }
+          p, ul, ol, li, pre, blockquote, table, tr, td { page-break-inside: avoid; break-inside: avoid; }
+        }
+
+        .print-header {
+          border-bottom: 2px solid #e5e7eb;
+          padding-bottom: 24px;
+          margin-bottom: 40px;
+        }
+        .print-header h1 {
+          margin: 0;
+          font-size: 28px;
+          color: #111827;
+          font-weight: 700;
+          letter-spacing: -0.025em;
+        }
+        .print-header p {
+          color: #6b7280;
+          margin: 8px 0 0 0;
+          font-size: 14px;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          font-weight: 500;
+        }
+
+        /* Typography */
+        h1, h2, h3 { color: #111827; margin-top: 2em; margin-bottom: 1em; font-weight: 600; letter-spacing: -0.025em; }
+        h1 { font-size: 24px; border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; }
+        h2 { font-size: 20px; }
+        h3 { font-size: 16px; text-transform: uppercase; letter-spacing: 0.05em; color: #4b5563; }
+        
+        p { margin-bottom: 1.5em; }
+        strong { color: #111827; font-weight: 600; }
+        
+        /* Lists */
+        ul, ol { padding-left: 24px; margin-bottom: 1.5em; }
+        li { margin-bottom: 0.5em; }
+        li > p { margin-bottom: 0.5em; }
+        
+        /* Blocks */
+        pre { 
+          background: #f3f4f6; 
+          padding: 20px; 
+          border-radius: 8px; 
+          border: 1px solid #e5e7eb; 
+          white-space: pre-wrap; 
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+          font-size: 14px;
+          overflow-x: auto;
+        }
+        blockquote { 
+          border-left: 4px solid #6366f1; 
+          margin: 1.5em 0; 
+          padding: 16px 20px; 
+          color: #4b5563; 
+          font-style: italic; 
+          background: #f9fafb; 
+          border-radius: 0 8px 8px 0; 
+        }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; margin: 2em 0; font-size: 14px; }
+        th { background-color: #f9fafb; font-weight: 600; color: #374151; border-bottom: 2px solid #e5e7eb; padding: 12px 16px; text-align: left; }
+        td { padding: 12px 16px; text-align: left; border-bottom: 1px solid #e5e7eb; color: #4b5563; }
+        tr:nth-child(even) td { background-color: #f9fafb; }
+      </style>
+    `);
     printWindow.document.write('</head><body>');
+    printWindow.document.write(`
+      <div class="print-header">
+        <h1>Synthetic Audience Analysis</h1>
+        <p>Generated on ${dateStr}</p>
+      </div>
+    `);
+    printWindow.document.write('<div class="report-content">');
     printWindow.document.write(reportContent ? reportContent.innerHTML : 'Report content missing');
+    printWindow.document.write('</div>');
     printWindow.document.write('</body></html>');
     
     printWindow.document.close();
@@ -299,7 +393,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
     setTimeout(() => {
         printWindow.print();
         printWindow.close();
-    }, 250);
+    }, 500);
   };
 
   let interestScore = report.insights?.overallInterestScore || 0;
