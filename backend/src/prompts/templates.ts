@@ -39,13 +39,21 @@ export function getLensInstruction(config?: SimulationConfig): string {
   
   const lenses = Array.isArray(c.lens) ? c.lens : [(c.lens || 'market_fit')];
   const lensTexts = lenses.map(l => LENS_DESCRIPTIONS[l] || LENS_DESCRIPTIONS.market_fit).join('\nAND ');
+  
+  let priorityStr = '';
+  if (c.segmentPriority && c.segmentPriority.length > 0) {
+    priorityStr = `\nSEGMENT PRIORITY RANKING:
+The user has explicitly ranked the following audience segments in order of importance (highest to lowest):
+${c.segmentPriority.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+You MUST generate MORE personas for the higher-ranked segments and weight their feedback MORE HEAVILY in your insights.`;
+  }
 
   return `
 PRIORITY LENSES: 
 ${lensTexts}
 ANALYSIS DEPTH: ${DEPTH_DESCRIPTIONS[c.depth] || DEPTH_DESCRIPTIONS.standard}
-GEOGRAPHIC FOCUS: ${REGION_LABELS[c.region] || REGION_LABELS.global}${customStr}
-Weight your entire analysis, persona reactions, concerns, rankings, and recommendations HEAVILY toward the priority lenses above.`;
+GEOGRAPHIC FOCUS: ${REGION_LABELS[c.region] || REGION_LABELS.global}${customStr}${priorityStr}
+Weight your entire analysis, persona reactions, concerns, rankings, and recommendations HEAVILY toward the priority lenses and segment priority above.`;
 }
 
 export function getPersonaCount(config?: SimulationConfig): number {

@@ -117,6 +117,46 @@ function App() {
     setVersionHistory([]);
   };
 
+  const reanalyzeWithPriority = async (segmentPriority: string[]) => {
+    if (!analysis) return;
+    try {
+      const config = { ...activeConfig, segmentPriority };
+      setActiveConfig(config);
+      setAppState('simulation');
+      
+      const ideaId = analysis.ideaId; // Wait, analysis in frontend might not have ideaId directly on the object.
+      // Wait, is ideaId on analysis? Let's check `startSimulationProcess`. It's `analysisResult.ideaId`.
+      // Where do we store ideaId? `report.ideaId` or `analysis.id`?
+      // Actually `report.ideaId` exists.
+      const currentIdeaId = report?.ideaId;
+      if (!currentIdeaId) throw new Error("No idea ID found");
+
+      // Step 2: Generate Audience
+      setSimStatus('generating');
+      const audienceResult = await generateAudience(currentIdeaId, config);
+      setPersonas(audienceResult.personas);
+
+      // Step 3: Simulate Reactions
+      setSimStatus('simulating');
+      const simResult = await simulate(currentIdeaId, config);
+      setSimulations(simResult.simulations);
+
+      // Step 4: Generate Report
+      setSimStatus('done');
+      const reportResult = await generateReport(currentIdeaId, config);
+      setReport(reportResult.report);
+      if (reportResult.redTeamReport) setRedTeamReport(reportResult.redTeamReport);
+      if (reportResult.competitors) setCompetitors(reportResult.competitors);
+      if (reportResult.communityRecommendations) setCommunityRecommendations(reportResult.communityRecommendations);
+      
+      setAppState('results');
+    } catch (error) {
+      console.error('Error during prioritized reanalysis:', error);
+      alert('An error occurred during reanalysis.');
+      setAppState('results');
+    }
+  };
+
   const handleClarificationSubmit = (answers: string) => {
     const combinedIdea = `${originalIdea}\n\nAdditional Context Provided by User:\n${answers}`;
     startSimulationProcess(combinedIdea, true);
@@ -195,9 +235,10 @@ function App() {
           onRestart={restart} 
           onGenerateRedTeam={async () => {
             const { generateRedTeamAnalysis } = await import('./services/api');
-            const res = await generateRedTeamAnalysis(report.ideaId);
+            const res = await generateRedTeamAnalysis(report!.ideaId);
             setRedTeamReport(res.redTeamReport);
           }}
+          onReanalyzeWithPriority={reanalyzeWithPriority}
           onPivotComplete={(result) => {
             if (report) {
               setVersionHistory(result.versionHistory || []);

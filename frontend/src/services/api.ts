@@ -173,13 +173,15 @@ export interface SimulationConfig {
   depth: 'quick' | 'standard' | 'deep';
   region: 'global' | 'north_america' | 'europe' | 'south_asia' | 'east_asia' | 'latam' | 'mena' | 'africa';
   customPersona?: string;
+  segmentPriority?: string[];
 }
 
 export const DEFAULT_CONFIG: SimulationConfig = {
   lens: ['market_fit'],
   depth: 'standard',
   region: 'global',
-  customPersona: ''
+  customPersona: '',
+  segmentPriority: []
 };
 
 export interface FullPipelineResult {

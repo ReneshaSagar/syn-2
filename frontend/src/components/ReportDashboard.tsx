@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown } from 'lucide-react';
 import { ChatDrawer } from './ChatDrawer';
 import { generateAsset, pivotIdea, sendChatMessage, summarizeChat, generateDraft } from '../services/api';
 import ReactMarkdown from 'react-markdown';
@@ -21,6 +21,7 @@ interface ReportDashboardProps {
   onRestart: () => void;
   onPivotComplete: (result: any) => void;
   onGenerateRedTeam?: () => Promise<void>;
+  onReanalyzeWithPriority?: (priority: string[]) => void;
 }
 
 export const ReportDashboard: React.FC<ReportDashboardProps> = ({ 
@@ -34,11 +35,21 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   versionHistory = [],
   onRestart, 
   onPivotComplete,
-  onGenerateRedTeam
+  onGenerateRedTeam,
+  onReanalyzeWithPriority
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'audience' | 'redteam' | 'competitors' | 'validation' | 'brainstorm' | 'versions' | 'simulate'>('overview');
   
   const [isGeneratingRedTeam, setIsGeneratingRedTeam] = useState(false);
+  const [isPriorityModalOpen, setIsPriorityModalOpen] = useState(false);
+  const [segmentPriority, setSegmentPriority] = useState<string[]>([]);
+
+  // Initialize segment priority from analysis if not set
+  useEffect(() => {
+    if (analysis?.audienceComposition && segmentPriority.length === 0) {
+      setSegmentPriority(analysis.audienceComposition.map(s => s.name));
+    }
+  }, [analysis]);
 
   // Brainstorm Chat State
   const [brainstormMessages, setBrainstormMessages] = useState<{role: 'user'|'assistant', content: string}[]>([
@@ -507,6 +518,80 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         {/* TAB 2: AUDIENCE (Persona Explorer) */}
         {activeTab === 'audience' && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-12">
+            
+            <div className="flex justify-between items-center bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] p-6 rounded-[2rem] shadow-sm">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Audience Segments</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Explore the personas generated for each segment of your market.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsPriorityModalOpen(true)}
+                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:hover:bg-[#222] text-gray-900 dark:text-white px-4 py-2 rounded-xl text-sm font-semibold transition-colors"
+              >
+                <Settings2 className="w-4 h-4" /> Adjust Priority Ranking
+              </button>
+            </div>
+
+            {isPriorityModalOpen && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-[#0a0a0a] border border-gray-200 dark:border-[#333] rounded-[2rem] p-8 max-w-lg w-full shadow-2xl relative">
+                  <button onClick={() => setIsPriorityModalOpen(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-900 dark:hover:text-white"><X className="w-5 h-5"/></button>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Segment Priority Ranking</h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+                    Rank your audience segments from highest to lowest priority. The AI will bias the simulation and generate more personas for higher-ranked segments.
+                  </p>
+                  
+                  <div className="space-y-3 mb-8">
+                    {segmentPriority.map((segment, index) => (
+                      <div key={segment} className="flex items-center gap-3 bg-gray-50 dark:bg-[#111] p-3 rounded-xl border border-gray-200 dark:border-[#333]">
+                        <span className="font-bold text-gray-400 w-6">{index + 1}.</span>
+                        <span className="flex-1 font-semibold text-gray-900 dark:text-white truncate">{segment}</span>
+                        <div className="flex flex-col gap-1">
+                          <button 
+                            disabled={index === 0}
+                            onClick={() => {
+                              const newP = [...segmentPriority];
+                              [newP[index - 1], newP[index]] = [newP[index], newP[index - 1]];
+                              setSegmentPriority(newP);
+                            }}
+                            className="p-1 text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </button>
+                          <button 
+                            disabled={index === segmentPriority.length - 1}
+                            onClick={() => {
+                              const newP = [...segmentPriority];
+                              [newP[index + 1], newP[index]] = [newP[index], newP[index + 1]];
+                              setSegmentPriority(newP);
+                            }}
+                            className="p-1 text-gray-400 hover:text-gray-900 dark:hover:text-white disabled:opacity-30 transition-colors"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-4">
+                    <button onClick={() => setIsPriorityModalOpen(false)} className="flex-1 py-3 font-semibold rounded-xl text-gray-700 bg-gray-100 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:text-gray-300 dark:hover:bg-[#222]">Cancel</button>
+                    <button 
+                      onClick={() => {
+                        setIsPriorityModalOpen(false);
+                        onReanalyzeWithPriority?.(segmentPriority);
+                      }}
+                      className="flex-1 py-3 font-semibold rounded-xl text-white bg-blue-600 hover:bg-blue-700 shadow-sm"
+                    >
+                      Re-analyze Idea
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+
             {Object.entries(personasBySegment).map(([segment, segmentPersonas]) => (
               <div key={segment} className="space-y-6">
                 <div className="flex items-center gap-4 border-b border-gray-200 dark:border-[#333] pb-4">
