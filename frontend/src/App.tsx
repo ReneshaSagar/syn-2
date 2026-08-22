@@ -149,11 +149,11 @@ function App() {
       if (reportResult.competitors) setCompetitors(reportResult.competitors);
       if (reportResult.communityRecommendations) setCommunityRecommendations(reportResult.communityRecommendations);
       
-      setAppState('results');
+      setAppState('report');
     } catch (error) {
       console.error('Error during prioritized reanalysis:', error);
       alert('An error occurred during reanalysis.');
-      setAppState('results');
+      setAppState('report');
     }
   };
 
