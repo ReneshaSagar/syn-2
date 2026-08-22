@@ -4,7 +4,7 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown, Plus, Minus, ExternalLink } from 'lucide-react';
 import { ChatDrawer } from './ChatDrawer';
 import { generateAsset, pivotIdea, sendChatMessage, summarizeChat, generateDraft } from '../services/api';
 import ReactMarkdown from 'react-markdown';
@@ -1007,6 +1007,36 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                     Summarize & Pivot
                   </button>
                 </div>
+              </div>
+
+              {/* R&D Recommendations Section */}
+              <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                 <div className="bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/30 rounded-2xl p-5">
+                   <h4 className="text-sm font-bold text-emerald-800 dark:text-emerald-400 flex items-center gap-2 mb-3 uppercase tracking-wider">
+                     <span className="bg-emerald-200 dark:bg-emerald-800 p-1 rounded-full text-emerald-700 dark:text-emerald-300"><Plus className="w-3 h-3"/></span>
+                     What to Add / Emphasize
+                   </h4>
+                   <ul className="space-y-2">
+                     {report.insights.improvementRecommendations?.slice(0, 3).map((rec, i) => (
+                       <li key={i} className="text-sm text-emerald-900 dark:text-emerald-300 flex items-start gap-2 leading-relaxed">
+                         <span className="text-emerald-500 mt-1 flex-shrink-0">•</span> {rec}
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
+                 <div className="bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-2xl p-5">
+                   <h4 className="text-sm font-bold text-rose-800 dark:text-rose-400 flex items-center gap-2 mb-3 uppercase tracking-wider">
+                     <span className="bg-rose-200 dark:bg-rose-800 p-1 rounded-full text-rose-700 dark:text-rose-300"><Minus className="w-3 h-3"/></span>
+                     What to Remove / Fix
+                   </h4>
+                   <ul className="space-y-2">
+                     {report.insights.topConcerns?.slice(0, 3).map((conc, i) => (
+                       <li key={i} className="text-sm text-rose-900 dark:text-rose-300 flex items-start gap-2 leading-relaxed">
+                         <span className="text-rose-500 mt-1 flex-shrink-0">•</span> {conc}
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
               </div>
 
               {/* Chat Area */}
