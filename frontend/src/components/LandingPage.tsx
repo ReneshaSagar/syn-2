@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History, Settings, Target, Banknote, Rocket, ShieldAlert } from 'lucide-react';
+import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History, Settings, Target, Banknote, Rocket, ShieldAlert, BookOpen, MessageSquareQuote } from 'lucide-react';
 import { fetchHistory, type SimulationConfig, DEFAULT_CONFIG } from '../services/api';
 
 interface LandingPageProps {
@@ -379,14 +379,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
           <div className="space-y-16">
             <div className="text-center space-y-4">
               <h2 className="text-4xl font-semibold tracking-tight text-framer-text dark:text-white transition-colors duration-500">How It Works</h2>
-              <p className="text-gray-500 dark:text-gray-400 text-xl font-light transition-colors duration-500">Three simple steps to profound insights.</p>
+              <p className="text-gray-500 dark:text-gray-400 text-xl font-light transition-colors duration-500">A multi-agent pipeline executing in under 60 seconds.</p>
             </div>
             
             <div className="grid md:grid-cols-3 gap-8">
               {[
                 { icon: FileText, title: "1. Idea Analysis", desc: "The AI parses your startup idea or feature concept and identifies the core target market automatically." },
-                { icon: Users, title: "2. Audience Generation", desc: "We spawn distinct synthetic personas (e.g., students, founders, PMs) matching your exact demographics." },
-                { icon: Sparkles, title: "3. Simulation", desc: "Each persona reacts independently, generating authentic thoughts, concerns, and a compiled insight report." }
+                { icon: Users, title: "2. Audience Generation", desc: "We spawn distinct synthetic personas (e.g., students, founders, PMs) using mathematical priority weighting to fit your exact demographics." },
+                { icon: Sparkles, title: "3. Simulation", desc: "Each persona reacts independently through a strict anti-hallucination harness, generating authentic thoughts and a compiled insight report." }
               ].map((feature, idx) => (
                 <div key={idx} className="bg-white dark:bg-[#0a0a0a] border border-framer-border dark:border-[#222] p-10 rounded-[2rem] hover:-translate-y-2 hover:shadow-framer-hover dark:shadow-none transition-all duration-500">
                   <div className="w-14 h-14 bg-gray-50 dark:bg-[#111] rounded-2xl flex items-center justify-center mb-8 text-black dark:text-white transition-colors duration-500">
@@ -394,6 +394,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                   </div>
                   <h3 className="text-2xl font-semibold mb-4 tracking-tight dark:text-white transition-colors duration-500">{feature.title}</h3>
                   <p className="text-gray-500 dark:text-gray-400 leading-relaxed font-light text-lg transition-colors duration-500">{feature.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* New Platform Capabilities Section */}
+          <div className="space-y-16 pt-20 border-t border-framer-border dark:border-[#222]">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl font-semibold tracking-tight text-framer-text dark:text-white transition-colors duration-500">Under the Hood</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-xl font-light transition-colors duration-500">Built for precision, safety, and actionable insights.</p>
+            </div>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[
+                { icon: ShieldAlert, title: "The Red Team", desc: "We actively try to destroy your idea. Our Devil's Advocate AI aggressively hunts for regulatory risks, market saturation, and operational nightmares so you can fix them before launch.", color: "text-rose-500" },
+                { icon: Target, title: "Mathematical Bias", desc: "Adjust your focus group's priority ranking dynamically. The engine uses quantitative math to spawn biased samples, saving you from manual prompt engineering.", color: "text-blue-500" },
+                { icon: BookOpen, title: "Live Web Research", desc: "We don't hallucinate competitors. Our Research Agent executes live web queries to find your exact real-world competitors and validation communities.", color: "text-indigo-500" },
+                { icon: MessageSquareQuote, title: "Human Drafts", desc: "Auto-generate validation posts for Reddit, Hacker News, or Twitter. Hardcoded to sound like a real, humble founder—not an AI or a corporate marketer.", color: "text-emerald-500" }
+              ].map((cap, idx) => (
+                <div key={idx} className="bg-white/50 dark:bg-[#0a0a0a]/50 backdrop-blur-sm border border-framer-border dark:border-[#222] p-8 rounded-[2rem] transition-all duration-500">
+                  <div className={`mb-6 ${cap.color}`}>
+                    <cap.icon className="w-8 h-8" />
+                  </div>
+                  <h3 className="text-xl font-semibold mb-3 tracking-tight dark:text-white transition-colors duration-500">{cap.title}</h3>
+                  <p className="text-gray-500 dark:text-gray-400 leading-relaxed font-light text-sm transition-colors duration-500">{cap.desc}</p>
                 </div>
               ))}
             </div>
