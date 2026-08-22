@@ -162,7 +162,7 @@ export const dbService = {
         personality_traits: p.personalityTraits
       }));
 
-      const { error } = await supabase.from('personas').insert(rows);
+      const { error } = await supabase.from('Reneshaandmadhavaudience').insert(rows);
       if (!error) return personasWithIds;
       console.error('Supabase savePersonas error:', error);
     }
@@ -178,7 +178,7 @@ export const dbService = {
   async getPersonas(ideaId: string): Promise<Persona[]> {
     if (supabase) {
       const { data, error } = await supabase
-        .from('personas')
+        .from('Reneshaandmadhavaudience')
         .select('*')
         .eq('idea_id', ideaId);
 
