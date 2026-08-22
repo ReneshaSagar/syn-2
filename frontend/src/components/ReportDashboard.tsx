@@ -4,9 +4,9 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown, Plus, Minus, ExternalLink } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown, Plus, Minus, ExternalLink, Swords } from 'lucide-react';
 import { ChatDrawer } from './ChatDrawer';
-import { generateAsset, pivotIdea, sendChatMessage, summarizeChat, generateDraft } from '../services/api';
+import { generateAsset, pivotIdea, sendChatMessage, summarizeChat, generateDraft, saveDebate } from '../services/api';
 import ReactMarkdown from 'react-markdown';
 
 interface ReportDashboardProps {
@@ -157,6 +157,100 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   }, [report?.ideaId, report?.chatMemory]);
 
   // Floating Cursor State is disabled for now
+
+  // Debate State
+  const sortedSimulations = [...simulations].sort((a, b) => b.result.excitementScore - a.result.excitementScore);
+  const defaultHighest = sortedSimulations[0]?.personaId;
+  const defaultLowest = sortedSimulations[sortedSimulations.length - 1]?.personaId;
+
+  const [debatePersona1Id, setDebatePersona1Id] = useState<string>(report?.debateMemory?.persona1Id || defaultHighest || '');
+  const [debatePersona2Id, setDebatePersona2Id] = useState<string>(report?.debateMemory?.persona2Id || defaultLowest || '');
+  const [debateTopic, setDebateTopic] = useState<string>(report?.debateMemory?.topic || 'the overall viability and potential of this idea');
+  const [debateMessages, setDebateMessages] = useState<{senderId: string, content: string}[]>(report?.debateMemory?.messages || []);
+  const [isDebateRunning, setIsDebateRunning] = useState(false);
+
+  useEffect(() => {
+    if (report?.debateMemory) {
+      setDebatePersona1Id(report.debateMemory.persona1Id);
+      setDebatePersona2Id(report.debateMemory.persona2Id);
+      setDebateTopic(report.debateMemory.topic);
+      setDebateMessages(report.debateMemory.messages);
+    } else {
+      setDebatePersona1Id(defaultHighest || '');
+      setDebatePersona2Id(defaultLowest || '');
+      setDebateTopic('the overall viability and potential of this idea');
+      setDebateMessages([]);
+    }
+  }, [report?.ideaId, report?.debateMemory]);
+
+  const handleStartDebate = async () => {
+    if (!debatePersona1Id || !debatePersona2Id || isDebateRunning) return;
+    setIsDebateRunning(true);
+    setDebateMessages([]); // Clear previous
+    const persona1 = personas.find(p => p.id === debatePersona1Id);
+    const persona2 = personas.find(p => p.id === debatePersona2Id);
+    if (!persona1 || !persona2) {
+      setIsDebateRunning(false);
+      return;
+    }
+
+    const currentMessages: {senderId: string, content: string}[] = [];
+    let lastPersona1Response = '';
+    
+    try {
+      // Turn 1: Persona 1 Opening
+      const msg1 = [{ role: 'user' as const, content: `Let's begin the debate regarding: ${debateTopic}. Give your opening statement and initial thoughts. Do not wait for me.` }];
+      const res1 = await sendChatMessage(report.ideaId, msg1, { type: 'debate', targetId: debatePersona1Id, topic: debateTopic });
+      lastPersona1Response = res1.response;
+      currentMessages.push({ senderId: debatePersona1Id, content: lastPersona1Response });
+      setDebateMessages([...currentMessages]);
+
+      // Turn 2: Persona 2 Opening/Rebuttal
+      const msg2 = [
+        { role: 'user' as const, content: `Let's begin the debate regarding: ${debateTopic}. Here is ${persona1.name}'s opening statement:\n\n"${lastPersona1Response}"\n\nProvide your rebuttal.` }
+      ];
+      const res2 = await sendChatMessage(report.ideaId, msg2, { type: 'debate', targetId: debatePersona2Id, topic: debateTopic });
+      let lastPersona2Response = res2.response;
+      currentMessages.push({ senderId: debatePersona2Id, content: lastPersona2Response });
+      setDebateMessages([...currentMessages]);
+
+      // Turn 3: Persona 1 Rebuttal
+      const msg3 = [
+        ...msg1,
+        { role: 'assistant' as const, content: lastPersona1Response },
+        { role: 'user' as const, content: `${persona2.name} responded:\n\n"${lastPersona2Response}"\n\nProvide your rebuttal.` }
+      ];
+      const res3 = await sendChatMessage(report.ideaId, msg3, { type: 'debate', targetId: debatePersona1Id, topic: debateTopic });
+      lastPersona1Response = res3.response;
+      currentMessages.push({ senderId: debatePersona1Id, content: lastPersona1Response });
+      setDebateMessages([...currentMessages]);
+
+      // Turn 4: Persona 2 Closing
+      const msg4 = [
+        ...msg2,
+        { role: 'assistant' as const, content: lastPersona2Response },
+        { role: 'user' as const, content: `${persona1.name} responded:\n\n"${lastPersona1Response}"\n\nProvide your closing thoughts.` }
+      ];
+      const res4 = await sendChatMessage(report.ideaId, msg4, { type: 'debate', targetId: debatePersona2Id, topic: debateTopic });
+      lastPersona2Response = res4.response;
+      currentMessages.push({ senderId: debatePersona2Id, content: lastPersona2Response });
+      setDebateMessages([...currentMessages]);
+
+      // Save to backend
+      await saveDebate(report.ideaId, {
+        persona1Id: debatePersona1Id,
+        persona2Id: debatePersona2Id,
+        topic: debateTopic,
+        messages: currentMessages
+      });
+
+    } catch (err) {
+      console.error(err);
+      setDebateMessages(prev => [...prev, { senderId: 'system', content: 'Debate encountered an error or was interrupted.' }]);
+    } finally {
+      setIsDebateRunning(false);
+    }
+  };
 
   const openChat = (type: 'persona' | 'general', targetId?: string, personaName?: string, message?: string) => {
     setChatContext({ type, targetId, personaName });
@@ -344,21 +438,29 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
             { id: 'audience', label: 'Synthetic Focus Group', icon: Users },
             { id: 'redteam', label: 'Red Team', icon: ShieldAlert },
             { id: 'competitors', label: 'Competitors', icon: Target },
+            { id: 'debate', label: 'Debate', icon: Swords, isRed: true },
             { id: 'validate', label: 'Where to Validate', icon: ChevronRight },
             { id: 'brainstorm', label: 'Lead Researcher', icon: MessageCircle },
             { id: 'versions', label: 'History', icon: History }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
+            const isRed = (tab as any).isRed;
+            
+            let buttonClasses = 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300';
+            if (isActive) {
+              buttonClasses = isRed 
+                ? 'bg-red-500 text-white shadow-md' 
+                : 'bg-gray-900 text-white dark:bg-[#222] dark:text-white shadow-md';
+            } else if (isRed) {
+              buttonClasses = 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/10';
+            }
+
             return (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                  isActive 
-                  ? 'bg-gray-900 text-white dark:bg-[#222] dark:text-white shadow-md' 
-                  : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'
-                }`}
+                className={`flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all whitespace-nowrap ${buttonClasses}`}
               >
                 <Icon className="w-4 h-4" />
                 {tab.label}
@@ -1128,6 +1230,128 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
             </div>
           </motion.div>
         )}
+
+        {/* TAB 5.7: DEBATE */}
+        {activeTab === 'debate' && (
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+            <div className="bg-white dark:bg-[#0a0a0a] border border-gray-100 dark:border-[#222] rounded-[2rem] p-8 shadow-sm flex flex-col h-[75vh]">
+              
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 pb-6 border-b border-gray-100 dark:border-[#222] gap-4">
+                <div>
+                  <h3 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Swords className="w-6 h-6 text-red-500" />
+                    Live Persona Debate
+                  </h3>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Watch two opposing personas argue over your idea.</p>
+                </div>
+                <div className="flex gap-2 w-full md:w-auto">
+                  <button 
+                    onClick={handleStartDebate}
+                    disabled={isDebateRunning}
+                    className="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-full text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
+                  >
+                    {isDebateRunning ? <Loader2 className="w-4 h-4 animate-spin" /> : <Swords className="w-4 h-4" />}
+                    {debateMessages.length > 0 ? 'Restart Debate' : 'Start Debate'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Debate Setup Controls */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-gray-50 dark:bg-[#111] p-4 rounded-2xl border border-gray-100 dark:border-[#222]">
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Debater 1 (Pro)</label>
+                  <select 
+                    value={debatePersona1Id}
+                    onChange={(e) => setDebatePersona1Id(e.target.value)}
+                    disabled={isDebateRunning}
+                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] text-gray-900 dark:text-white text-sm rounded-lg p-2 outline-none"
+                  >
+                    {personas.map(p => {
+                      const sim = simulations.find(s => s.personaId === p.id);
+                      return <option key={p.id} value={p.id}>{p.name} ({p.role}) - Score: {sim?.result.excitementScore}</option>;
+                    })}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Debater 2 (Con)</label>
+                  <select 
+                    value={debatePersona2Id}
+                    onChange={(e) => setDebatePersona2Id(e.target.value)}
+                    disabled={isDebateRunning}
+                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] text-gray-900 dark:text-white text-sm rounded-lg p-2 outline-none"
+                  >
+                    {personas.map(p => {
+                      const sim = simulations.find(s => s.personaId === p.id);
+                      return <option key={p.id} value={p.id}>{p.name} ({p.role}) - Score: {sim?.result.excitementScore}</option>;
+                    })}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-gray-500 uppercase">Debate Topic / Focus</label>
+                  <input 
+                    type="text"
+                    value={debateTopic}
+                    onChange={(e) => setDebateTopic(e.target.value)}
+                    disabled={isDebateRunning}
+                    placeholder="e.g. pricing, market fit, UX..."
+                    className="w-full bg-white dark:bg-[#1a1a1a] border border-gray-200 dark:border-[#333] text-gray-900 dark:text-white text-sm rounded-lg p-2 outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Debate Chat Area */}
+              <div className="flex-1 overflow-y-auto space-y-6 pr-4 mb-2">
+                {debateMessages.length === 0 && !isDebateRunning && (
+                  <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                    <Swords className="w-12 h-12 mb-4 opacity-20" />
+                    <p>Click "Start Debate" to watch them argue.</p>
+                  </div>
+                )}
+                {debateMessages.map((msg, idx) => {
+                  const persona = personas.find(p => p.id === msg.senderId);
+                  const isSystem = msg.senderId === 'system';
+                  const isLeft = idx % 2 === 0; // Alternate sides
+                  
+                  if (isSystem) {
+                    return (
+                      <div key={idx} className="flex justify-center">
+                        <span className="text-xs text-red-500 font-medium bg-red-50 dark:bg-red-900/10 px-3 py-1 rounded-full">{msg.content}</span>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div key={idx} className={`flex flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
+                      <div className="flex items-center gap-2 mb-1 px-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase">{persona?.name} ({persona?.role})</span>
+                      </div>
+                      <div className={`max-w-[85%] rounded-2xl p-5 ${isLeft ? 'bg-indigo-50 dark:bg-indigo-900/10 text-gray-800 dark:text-gray-200 rounded-bl-none border border-indigo-100 dark:border-indigo-900/30' : 'bg-red-50 dark:bg-red-900/10 text-gray-800 dark:text-gray-200 rounded-br-none border border-red-100 dark:border-red-900/30'}`}>
+                        <div className="prose prose-sm dark:prose-invert max-w-none">
+                          <ReactMarkdown>{msg.content}</ReactMarkdown>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {isDebateRunning && (
+                  <div className={`flex flex-col ${debateMessages.length % 2 === 0 ? 'items-start' : 'items-end'}`}>
+                     <div className="flex items-center gap-2 mb-1 px-2">
+                        <span className="text-xs font-bold text-gray-500 uppercase">
+                          {debateMessages.length % 2 === 0 ? personas.find(p => p.id === debatePersona1Id)?.name : personas.find(p => p.id === debatePersona2Id)?.name} is typing...
+                        </span>
+                      </div>
+                    <div className={`bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-2xl p-4 flex items-center gap-2 text-gray-500 ${debateMessages.length % 2 === 0 ? 'rounded-bl-none' : 'rounded-br-none'}`}>
+                      <div className="typing-dots">
+                        <span>.</span><span>.</span><span>.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+
 
         {/* TAB 6: VERSIONS */}
         {activeTab === 'versions' && (

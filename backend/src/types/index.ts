@@ -190,6 +190,7 @@ export interface Report {
   communityRecommendations?: CommunityRecommendation[];
   versionHistory?: VersionSnapshot[];
   chatMemory?: Record<string, { role: 'user'|'assistant', content: string }[]>;
+  debateMemory?: { persona1Id: string, persona2Id: string, topic: string, messages: { senderId: string, content: string }[] };
   createdAt: Date;
 }
 

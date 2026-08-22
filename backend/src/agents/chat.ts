@@ -10,7 +10,7 @@ export const chatAgent = {
   async handleChat(
     ideaId: string,
     messages: ChatMessage[],
-    context?: { type: 'persona' | 'general'; targetId?: string }
+    context?: { type: 'persona' | 'general' | 'debate'; targetId?: string; topic?: string }
   ): Promise<string> {
     const idea = await dbService.getIdea(ideaId);
     if (!idea) throw new Error('Idea not found');
@@ -42,6 +42,30 @@ Your objections to buying: ${simulation?.result.objections.join(', ')}
 Your suggestions: ${simulation?.result.suggestions.join(', ')}
 
 You are now being interviewed by the product creator. Answer their questions directly, staying completely IN CHARACTER. Be helpful but honest about your reservations. Do not break character. Do not say "As an AI..."`;
+    } else if (context?.type === 'debate' && context.targetId) {
+      const persona = personas.find(p => p.id === context.targetId);
+      const simulation = simulations.find(s => s.personaId === context.targetId);
+      const topic = context.topic || 'the validity and potential of this idea';
+      
+      if (!persona) throw new Error('Persona not found');
+
+      systemInstruction = `You are ${persona.name}, a ${persona.age}-year-old ${persona.role}.
+Experience: ${persona.experience}
+Personality: ${persona.personalityTraits.join(', ')}
+
+You recently evaluated a new product/startup idea:
+"${idea.rawText}"
+
+Your initial reaction was:
+"${simulation?.result.reaction}"
+
+You are now engaging in a fierce, live debate against another persona regarding: ${topic}.
+The opposing persona's arguments will appear as messages from the "user".
+CRITICAL INSTRUCTIONS:
+- Vigorously defend your perspective based on your background and initial reaction.
+- Directly attack or rebut the opponent's arguments.
+- Keep your responses punchy, concise, and conversational (1-2 short paragraphs max).
+- Do not break character. Do not say "As an AI...". Speak directly to your opponent.`;
     } else {
       // General Analyst Mode
       systemInstruction = `You are the Head of Synthetic R&D. You have just completed a synthetic audience simulation for the founder's idea:

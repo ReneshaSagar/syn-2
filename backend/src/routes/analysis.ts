@@ -271,4 +271,28 @@ router.get('/history/:ideaId', asyncHandler(async (req: Request, res: Response) 
   });
 }));
 
+/**
+ * POST /save-debate
+ * Saves the completed debate to the report.
+ */
+router.post('/save-debate', asyncHandler(async (req: Request, res: Response) => {
+  const { ideaId, debateMemory } = req.body;
+  if (!ideaId || !debateMemory) return res.status(400).json({ error: 'Missing ideaId or debateMemory' });
+
+  const report = await dbService.getReport(ideaId);
+  if (report) {
+    report.debateMemory = debateMemory;
+    await dbService.saveReport(ideaId, report.insights, report.fullReportMarkdown, {
+      redTeamReport: report.redTeamReport,
+      competitors: report.competitors,
+      communityRecommendations: report.communityRecommendations,
+      versionHistory: report.versionHistory,
+      chatMemory: report.chatMemory,
+      debateMemory: report.debateMemory
+    });
+    return res.json({ success: true });
+  }
+  return res.status(404).json({ error: 'Report not found' });
+}));
+
 export default router;

@@ -171,6 +171,7 @@ export interface Report {
   communityRecommendations?: CommunityRecommendation[];
   versionHistory?: VersionSnapshot[];
   chatMemory?: Record<string, { role: 'user'|'assistant', content: string }[]>;
+  debateMemory?: { persona1Id: string, persona2Id: string, topic: string, messages: { senderId: string, content: string }[] };
 }
 
 // Full pipeline result (from /full-analysis or /pivot)
@@ -241,7 +242,7 @@ export const fullAnalysis = async (idea: string) => {
 export const sendChatMessage = async (
   ideaId: string, 
   messages: { role: 'user'|'assistant', content: string }[], 
-  context?: { type: 'persona' | 'general', targetId?: string }
+  context?: { type: 'persona' | 'general' | 'debate', targetId?: string, topic?: string }
 ) => {
   const response = await axios.post(`${API_URL}/chat`, { ideaId, messages, context });
   return response.data;
@@ -249,6 +250,11 @@ export const sendChatMessage = async (
 
 export const generateAsset = async (ideaId: string, targetText: string) => {
   const response = await axios.post(`${API_URL}/generate-asset`, { ideaId, targetText });
+  return response.data;
+};
+
+export const saveDebate = async (ideaId: string, debateMemory: any) => {
+  const response = await axios.post(`${API_URL}/save-debate`, { ideaId, debateMemory });
   return response.data;
 };
 
