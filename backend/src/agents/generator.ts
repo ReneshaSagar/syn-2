@@ -23,6 +23,40 @@ export const generatorAgent = {
       segments = [{ name: 'General Audience', description: 'General users who might be interested in the concept.', count: 5 }];
     }
 
+    // Apply Segment Priority Math
+    if (config?.segmentPriority && config.segmentPriority.length > 0) {
+      console.log('Applying segment priority distribution...', config.segmentPriority);
+      const totalCount = segments.reduce((sum, s) => sum + (s.count || 5), 0);
+      
+      // Sort segments by their priority rank
+      const prioritySegments = [...segments].sort((a, b) => {
+        const indexA = config.segmentPriority!.indexOf(a.name);
+        const indexB = config.segmentPriority!.indexOf(b.name);
+        const rankA = indexA !== -1 ? indexA : 999;
+        const rankB = indexB !== -1 ? indexB : 999;
+        return rankA - rankB;
+      });
+
+      // Distribute counts based on rank (highest rank gets biggest weight)
+      // Example for 4 segments: weights [4, 3, 2, 1]
+      const n = prioritySegments.length;
+      const totalWeight = (n * (n + 1)) / 2;
+      let remainingCount = totalCount;
+
+      prioritySegments.forEach((segment, idx) => {
+        const weight = n - idx; // Highest rank gets weight 'n'
+        if (idx === n - 1) {
+          // Last segment gets whatever is left to avoid rounding errors
+          segment.count = remainingCount;
+        } else {
+          const allocated = Math.round((weight / totalWeight) * totalCount);
+          segment.count = allocated > 0 ? allocated : 1; // Ensure at least 1
+          remainingCount -= segment.count;
+        }
+      });
+      segments = prioritySegments;
+    }
+
     const lensInstructions = getLensInstruction(config);
     const enhancedSystemInstruction = AUDIENCE_GENERATOR_SYSTEM + '\n' + lensInstructions;
 
