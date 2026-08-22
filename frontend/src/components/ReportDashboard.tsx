@@ -254,18 +254,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   return (
     <div className="min-h-screen p-8 bg-gray-50 dark:bg-[#050505] text-gray-900 dark:text-gray-100 selection:bg-blue-100 dark:selection:bg-blue-900/50 selection:text-blue-900 dark:selection:text-blue-100 font-['Outfit'] transition-colors duration-500 pb-32">
       <div className="max-w-7xl mx-auto space-y-10 pt-8">
-        
-        {/* Top Navigation Bar */}
-        <div className="flex border-b border-gray-100 dark:border-[#222] px-6 py-4 overflow-x-auto hide-scrollbar gap-2 sticky top-0 bg-white/80 dark:bg-[#050505]/80 backdrop-blur-md z-40">
-          <TabButton active={activeTab === 'overview'} onClick={() => setActiveTab('overview')} icon={PieChart}>R&D Summary</TabButton>
-          <TabButton active={activeTab === 'audience'} onClick={() => setActiveTab('audience')} icon={Users}>Synthetic Focus Group</TabButton>
-          <TabButton active={activeTab === 'simulate'} onClick={() => setActiveTab('simulate')} icon={MessageSquare}>Interviews</TabButton>
-          <TabButton active={activeTab === 'brainstorm'} onClick={() => setActiveTab('brainstorm')} icon={Sparkles}>Lead Researcher</TabButton>
-          <TabButton active={activeTab === 'validation'} onClick={() => setActiveTab('validation')} icon={MapPin}>Where to Validate</TabButton>
-          <TabButton active={activeTab === 'redteam'} onClick={() => setActiveTab('redteam')} icon={ShieldAlert}>Red Team</TabButton>
-          <TabButton active={activeTab === 'competitors'} onClick={() => setActiveTab('competitors')} icon={Target}>Competitors</TabButton>
-          <TabButton active={activeTab === 'versions'} onClick={() => setActiveTab('versions')} icon={History}>History ({versionHistory.length})</TabButton>
-        </div>
+
 
         {/* Header Section */}
         <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6">
@@ -300,13 +289,13 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         {/* Tab Navigation */}
         <div className="flex overflow-x-auto hide-scrollbar bg-white dark:bg-[#111] p-1.5 rounded-full border border-gray-200 dark:border-[#333] shadow-sm">
           {[
-            { id: 'overview', label: 'Overview', icon: Activity },
-            { id: 'audience', label: 'Audience', icon: Users },
+            { id: 'overview', label: 'R&D Summary', icon: Activity },
+            { id: 'audience', label: 'Synthetic Focus Group', icon: Users },
             { id: 'redteam', label: 'Red Team', icon: ShieldAlert },
             { id: 'competitors', label: 'Competitors', icon: Target },
             { id: 'validate', label: 'Where to Validate', icon: ChevronRight },
-            { id: 'brainstorm', label: 'Brainstorm', icon: MessageCircle },
-            { id: 'versions', label: 'Versions', icon: History }
+            { id: 'brainstorm', label: 'Lead Researcher', icon: MessageCircle },
+            { id: 'versions', label: 'History', icon: History }
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
