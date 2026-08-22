@@ -4,10 +4,11 @@ import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip as RechartsTooltip, CartesianGrid, ScatterChart, Scatter, ZAxis
 } from 'recharts';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown, Plus, Minus, ExternalLink, Swords } from 'lucide-react';
+import { ArrowRight, ArrowLeft, ArrowDown, CheckCircle2, MessageCircle, FileText, Wand2, Loader2, X, Users, ShieldAlert, Target, History, ChevronRight, Activity, TrendingUp, TrendingDown, BookOpen, MessageSquareQuote, ThumbsUp, AlertOctagon, Shield, HelpCircle, AlertTriangle, Crosshair, Building, MapPin, Settings2, ChevronUp, ChevronDown, Plus, Minus, ExternalLink, Swords, Flag } from 'lucide-react';
 import { ChatDrawer } from './ChatDrawer';
 import { generateAsset, pivotIdea, sendChatMessage, summarizeChat, generateDraft, saveDebate } from '../services/api';
 import ReactMarkdown from 'react-markdown';
+import { marked } from 'marked';
 
 interface ReportDashboardProps {
   report: Report;
@@ -183,70 +184,134 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
     }
   }, [report?.ideaId, report?.debateMemory]);
 
+  const [userDebateInput, setUserDebateInput] = useState('');
+  const [userDebateSide, setUserDebateSide] = useState<'pro' | 'con'>('pro');
+
+  const getMessagesForPersona = (targetPersonaId: string, opposingPersonaName: string) => {
+    const msgs: { role: 'user' | 'assistant', content: string }[] = [];
+    msgs.push({ role: 'user', content: `Let's begin the debate regarding: ${debateTopic}.` });
+    
+    for (const msg of debateMessages) {
+      if (msg.senderId === targetPersonaId) {
+        msgs.push({ role: 'assistant', content: msg.content });
+      } else if (msg.senderId !== 'system' && msg.senderId !== 'conclusion') {
+        const isUser = msg.senderId.startsWith('user-');
+        const senderName = isUser ? `The Founder (acting as ${msg.senderId === 'user-pro' ? 'Pro' : 'Con'})` : opposingPersonaName;
+        msgs.push({ role: 'user', content: `${senderName} said:\n\n"${msg.content}"\n\nProvide your rebuttal.` });
+      }
+    }
+    return msgs;
+  };
+
   const handleStartDebate = async () => {
     if (!debatePersona1Id || !debatePersona2Id || isDebateRunning) return;
     setIsDebateRunning(true);
     setDebateMessages([]); // Clear previous
+    setDebateConclusion(null);
     const persona1 = personas.find(p => p.id === debatePersona1Id);
-    const persona2 = personas.find(p => p.id === debatePersona2Id);
-    if (!persona1 || !persona2) {
-      setIsDebateRunning(false);
-      return;
-    }
+    if (!persona1) { setIsDebateRunning(false); return; }
 
-    const currentMessages: {senderId: string, content: string}[] = [];
-    let lastPersona1Response = '';
-    
     try {
-      // Turn 1: Persona 1 Opening
+      // Turn 1
       const msg1 = [{ role: 'user' as const, content: `Let's begin the debate regarding: ${debateTopic}. Give your opening statement and initial thoughts. Do not wait for me.` }];
       const res1 = await sendChatMessage(report.ideaId, msg1, { type: 'debate', targetId: debatePersona1Id, topic: debateTopic });
-      lastPersona1Response = res1.response;
-      currentMessages.push({ senderId: debatePersona1Id, content: lastPersona1Response });
+      const currentMessages = [{ senderId: debatePersona1Id, content: res1.response }];
       setDebateMessages([...currentMessages]);
 
-      // Turn 2: Persona 2 Opening/Rebuttal
+      // Turn 2
       const msg2 = [
-        { role: 'user' as const, content: `Let's begin the debate regarding: ${debateTopic}. Here is ${persona1.name}'s opening statement:\n\n"${lastPersona1Response}"\n\nProvide your rebuttal.` }
+        { role: 'user' as const, content: `Let's begin the debate regarding: ${debateTopic}. Here is ${persona1.name}'s opening statement:\n\n"${res1.response}"\n\nProvide your rebuttal.` }
       ];
       const res2 = await sendChatMessage(report.ideaId, msg2, { type: 'debate', targetId: debatePersona2Id, topic: debateTopic });
-      let lastPersona2Response = res2.response;
-      currentMessages.push({ senderId: debatePersona2Id, content: lastPersona2Response });
+      currentMessages.push({ senderId: debatePersona2Id, content: res2.response });
       setDebateMessages([...currentMessages]);
 
-      // Turn 3: Persona 1 Rebuttal
-      const msg3 = [
-        ...msg1,
-        { role: 'assistant' as const, content: lastPersona1Response },
-        { role: 'user' as const, content: `${persona2.name} responded:\n\n"${lastPersona2Response}"\n\nProvide your rebuttal.` }
-      ];
-      const res3 = await sendChatMessage(report.ideaId, msg3, { type: 'debate', targetId: debatePersona1Id, topic: debateTopic });
-      lastPersona1Response = res3.response;
-      currentMessages.push({ senderId: debatePersona1Id, content: lastPersona1Response });
-      setDebateMessages([...currentMessages]);
-
-      // Turn 4: Persona 2 Closing
-      const msg4 = [
-        ...msg2,
-        { role: 'assistant' as const, content: lastPersona2Response },
-        { role: 'user' as const, content: `${persona1.name} responded:\n\n"${lastPersona1Response}"\n\nProvide your closing thoughts.` }
-      ];
-      const res4 = await sendChatMessage(report.ideaId, msg4, { type: 'debate', targetId: debatePersona2Id, topic: debateTopic });
-      lastPersona2Response = res4.response;
-      currentMessages.push({ senderId: debatePersona2Id, content: lastPersona2Response });
-      setDebateMessages([...currentMessages]);
-
-      // Save to backend
       await saveDebate(report.ideaId, {
         persona1Id: debatePersona1Id,
         persona2Id: debatePersona2Id,
         topic: debateTopic,
-        messages: currentMessages
+        messages: currentMessages,
+        conclusion: undefined
       });
+    } catch (err) {
+      setDebateMessages(prev => [...prev, { senderId: 'system', content: 'Debate encountered an error.' }]);
+    } finally {
+      setIsDebateRunning(false);
+    }
+  };
 
+  const handleNextTurn = async () => {
+    if (!debatePersona1Id || !debatePersona2Id || isDebateRunning || debateMessages.length === 0) return;
+    setIsDebateRunning(true);
+
+    // Determine whose turn it is
+    const lastSender = debateMessages[debateMessages.length - 1].senderId;
+    let nextPersonaId = debatePersona2Id;
+    let opposingName = personas.find(p => p.id === debatePersona1Id)?.name || 'Opponent';
+    
+    // If the last sender was Persona 2, or User Con, then Persona 1 (Pro) should reply.
+    if (lastSender === debatePersona2Id || lastSender === 'user-con') {
+      nextPersonaId = debatePersona1Id;
+      opposingName = personas.find(p => p.id === debatePersona2Id)?.name || 'Opponent';
+    }
+
+    try {
+      const msgs = getMessagesForPersona(nextPersonaId, opposingName);
+      const res = await sendChatMessage(report.ideaId, msgs, { type: 'debate', targetId: nextPersonaId, topic: debateTopic });
+      
+      const newMessages = [...debateMessages, { senderId: nextPersonaId, content: res.response }];
+      setDebateMessages(newMessages);
+
+      await saveDebate(report.ideaId, {
+        persona1Id: debatePersona1Id,
+        persona2Id: debatePersona2Id,
+        topic: debateTopic,
+        messages: newMessages,
+        conclusion: debateConclusion || undefined
+      });
+    } catch (err) {
+      setDebateMessages(prev => [...prev, { senderId: 'system', content: 'Debate encountered an error.' }]);
+    } finally {
+      setIsDebateRunning(false);
+    }
+  };
+
+  const handleUserInterject = async () => {
+    if (!userDebateInput.trim() || isDebateRunning) return;
+    const sender = `user-${userDebateSide}`;
+    const newMessages = [...debateMessages, { senderId: sender, content: userDebateInput.trim() }];
+    setDebateMessages(newMessages);
+    setUserDebateInput('');
+    
+    await saveDebate(report.ideaId, {
+      persona1Id: debatePersona1Id,
+      persona2Id: debatePersona2Id,
+      topic: debateTopic,
+      messages: newMessages,
+      conclusion: debateConclusion || undefined
+    });
+  };
+
+  const handleEndDebate = async () => {
+    if (isDebateRunning || debateMessages.length === 0) return;
+    setIsDebateRunning(true);
+    try {
+      const msgs = debateMessages.map(m => ({
+        role: 'user' as const,
+        content: `[${m.senderId}]: ${m.content}`
+      }));
+      const res = await sendChatMessage(report.ideaId, msgs, { type: 'debate-conclusion' });
+      setDebateConclusion(res.response);
+      
+      await saveDebate(report.ideaId, {
+        persona1Id: debatePersona1Id,
+        persona2Id: debatePersona2Id,
+        topic: debateTopic,
+        messages: debateMessages,
+        conclusion: res.response
+      });
     } catch (err) {
       console.error(err);
-      setDebateMessages(prev => [...prev, { senderId: 'system', content: 'Debate encountered an error or was interrupted.' }]);
     } finally {
       setIsDebateRunning(false);
     }
@@ -281,7 +346,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     const printWindow = window.open('', '', 'height=800,width=800');
     if (!printWindow) return;
     
@@ -383,7 +448,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
       </div>
     `);
     printWindow.document.write('<div class="report-content">');
-    printWindow.document.write(reportContent ? reportContent.innerHTML : 'Report content missing');
+    const htmlContent = report.fullReportMarkdown ? marked.parse(report.fullReportMarkdown) : 'Report content missing';
+    printWindow.document.write(typeof htmlContent === 'string' ? htmlContent : await htmlContent);
     printWindow.document.write('</div>');
     printWindow.document.write('</body></html>');
     
@@ -1394,8 +1460,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               </div>
 
               {/* Debate Chat Area */}
-              <div className="flex-1 overflow-y-auto space-y-6 pr-4 mb-2">
-                {debateMessages.length === 0 && !isDebateRunning && (
+              <div className="flex-1 overflow-y-auto space-y-6 pr-4 mb-4">
+                {debateMessages.length === 0 && !isDebateRunning && !debateConclusion && (
                   <div className="h-full flex flex-col items-center justify-center text-gray-400">
                     <Swords className="w-12 h-12 mb-4 opacity-20" />
                     <p>Click "Start Debate" to watch them argue.</p>
@@ -1403,8 +1469,12 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                 )}
                 {debateMessages.map((msg, idx) => {
                   const persona = personas.find(p => p.id === msg.senderId);
+                  const isUserPro = msg.senderId === 'user-pro';
+                  const isUserCon = msg.senderId === 'user-con';
                   const isSystem = msg.senderId === 'system';
-                  const isLeft = idx % 2 === 0; // Alternate sides
+                  
+                  // Pro is on left, Con is on right.
+                  const isLeft = (msg.senderId === debatePersona1Id) || isUserPro;
                   
                   if (isSystem) {
                     return (
@@ -1414,10 +1484,12 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                     );
                   }
 
+                  const displayName = isUserPro ? 'You (Supporting Pro)' : isUserCon ? 'You (Supporting Con)' : `${persona?.name} (${persona?.role})`;
+
                   return (
                     <div key={idx} className={`flex flex-col ${isLeft ? 'items-start' : 'items-end'}`}>
                       <div className="flex items-center gap-2 mb-1 px-2">
-                        <span className="text-xs font-bold text-gray-500 uppercase">{persona?.name} ({persona?.role})</span>
+                        <span className="text-xs font-bold text-gray-500 uppercase">{displayName}</span>
                       </div>
                       <div className={`max-w-[85%] rounded-2xl p-5 ${isLeft ? 'bg-indigo-50 dark:bg-indigo-900/10 text-gray-800 dark:text-gray-200 rounded-bl-none border border-indigo-100 dark:border-indigo-900/30' : 'bg-red-50 dark:bg-red-900/10 text-gray-800 dark:text-gray-200 rounded-br-none border border-red-100 dark:border-red-900/30'}`}>
                         <div className="prose prose-sm dark:prose-invert max-w-none">
@@ -1428,20 +1500,76 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                   );
                 })}
                 {isDebateRunning && (
-                  <div className={`flex flex-col ${debateMessages.length % 2 === 0 ? 'items-start' : 'items-end'}`}>
-                     <div className="flex items-center gap-2 mb-1 px-2">
-                        <span className="text-xs font-bold text-gray-500 uppercase">
-                          {debateMessages.length % 2 === 0 ? personas.find(p => p.id === debatePersona1Id)?.name : personas.find(p => p.id === debatePersona2Id)?.name} is typing...
-                        </span>
-                      </div>
-                    <div className={`bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-2xl p-4 flex items-center gap-2 text-gray-500 ${debateMessages.length % 2 === 0 ? 'rounded-bl-none' : 'rounded-br-none'}`}>
-                      <div className="typing-dots">
-                        <span>.</span><span>.</span><span>.</span>
-                      </div>
+                  <div className={`flex justify-center my-4`}>
+                    <div className="bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#222] rounded-full px-4 py-2 flex items-center gap-2 text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span className="text-xs font-medium uppercase tracking-widest">Generating Response...</span>
+                    </div>
+                  </div>
+                )}
+                {debateConclusion && (
+                  <div className="mt-8 border-t border-gray-100 dark:border-[#222] pt-8">
+                    <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/30 rounded-2xl p-6">
+                      <h4 className="text-amber-800 dark:text-amber-500 font-bold mb-2 flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5" /> Debate Conclusion
+                      </h4>
+                      <p className="text-amber-900 dark:text-amber-200 text-sm leading-relaxed">{debateConclusion}</p>
                     </div>
                   </div>
                 )}
               </div>
+
+              {/* Debate Interactive Controls */}
+              {debateMessages.length > 0 && !debateConclusion && (
+                <div className="pt-4 border-t border-gray-100 dark:border-[#222] space-y-4">
+                  <div className="flex gap-2 flex-wrap items-center">
+                    <button
+                      onClick={handleNextTurn}
+                      disabled={isDebateRunning}
+                      className="bg-gray-900 dark:bg-white text-white dark:text-black px-4 py-2 rounded-full text-sm font-semibold hover:bg-black dark:hover:bg-gray-100 disabled:opacity-50 transition-colors"
+                    >
+                      AI Continue (Next Turn)
+                    </button>
+                    <button
+                      onClick={handleEndDebate}
+                      disabled={isDebateRunning}
+                      className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 px-4 py-2 rounded-full text-sm font-semibold hover:bg-amber-200 dark:hover:bg-amber-900/50 disabled:opacity-50 transition-colors ml-auto"
+                    >
+                      End & Summarize Debate
+                    </button>
+                  </div>
+                  
+                  <form 
+                    onSubmit={(e) => { e.preventDefault(); handleUserInterject(); }}
+                    className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-gray-50 dark:bg-[#111] border border-gray-200 dark:border-[#333] rounded-2xl sm:rounded-full p-2 focus-within:border-indigo-500 dark:focus-within:border-indigo-500 transition-colors"
+                  >
+                    <select
+                      value={userDebateSide}
+                      onChange={(e) => setUserDebateSide(e.target.value as 'pro' | 'con')}
+                      disabled={isDebateRunning}
+                      className="bg-transparent border-none text-xs font-bold uppercase text-gray-500 outline-none px-2 cursor-pointer"
+                    >
+                      <option value="pro">Join Pro</option>
+                      <option value="con">Join Con</option>
+                    </select>
+                    <input 
+                      type="text"
+                      value={userDebateInput}
+                      onChange={(e) => setUserDebateInput(e.target.value)}
+                      disabled={isDebateRunning}
+                      placeholder="Add your own argument to the debate..."
+                      className="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-900 dark:text-white px-2 py-1"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={!userDebateInput.trim() || isDebateRunning}
+                      className="bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white p-2 rounded-full transition-colors flex items-center justify-center shrink-0"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </form>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

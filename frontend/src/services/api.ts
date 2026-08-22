@@ -171,7 +171,7 @@ export interface Report {
   communityRecommendations?: CommunityRecommendation[];
   versionHistory?: VersionSnapshot[];
   chatMemory?: Record<string, { role: 'user'|'assistant', content: string }[]>;
-  debateMemory?: { persona1Id: string, persona2Id: string, topic: string, messages: { senderId: string, content: string }[] };
+  debateMemory?: { persona1Id: string, persona2Id: string, topic: string, messages: { senderId: string, content: string }[], conclusion?: string };
 }
 
 // Full pipeline result (from /full-analysis or /pivot)
@@ -242,7 +242,7 @@ export const fullAnalysis = async (idea: string) => {
 export const sendChatMessage = async (
   ideaId: string, 
   messages: { role: 'user'|'assistant', content: string }[], 
-  context?: { type: 'persona' | 'general' | 'debate', targetId?: string, topic?: string }
+  context?: { type: 'persona' | 'general' | 'debate' | 'debate-conclusion', targetId?: string, topic?: string }
 ) => {
   const response = await axios.post(`${API_URL}/chat`, { ideaId, messages, context });
   return response.data;

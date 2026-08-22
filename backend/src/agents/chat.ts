@@ -10,7 +10,7 @@ export const chatAgent = {
   async handleChat(
     ideaId: string,
     messages: ChatMessage[],
-    context?: { type: 'persona' | 'general' | 'debate'; targetId?: string; topic?: string }
+    context?: { type: 'persona' | 'general' | 'debate' | 'debate-conclusion'; targetId?: string; topic?: string }
   ): Promise<string> {
     const idea = await dbService.getIdea(ideaId);
     if (!idea) throw new Error('Idea not found');
@@ -66,6 +66,9 @@ CRITICAL INSTRUCTIONS:
 - Directly attack or rebut the opponent's arguments.
 - Keep your responses punchy, concise, and conversational (1-2 short paragraphs max).
 - Do not break character. Do not say "As an AI...". Speak directly to your opponent.`;
+    } else if (context?.type === 'debate-conclusion') {
+      systemInstruction = `You are a master debate moderator. The founder organized a debate between two distinct personas regarding the idea: "${idea.rawText}".
+Read the conversation history (provided by the user) and provide a punchy 1-2 sentence conclusion stating who made the stronger points, and the final takeaway for the founder. Do NOT write a long summary. Declare a winner if one side clearly dominated.`;
     } else {
       // General Analyst Mode
       systemInstruction = `You are the Head of Synthetic R&D. You have just completed a synthetic audience simulation for the founder's idea:
