@@ -121,20 +121,20 @@ const SpeechBubble: React.FC<{ text: string, emoji?: string, isDone: boolean, po
       transition={{ type: 'spring', damping: 15, stiffness: 300 }}
       className={`absolute ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 -translate-x-1/2 z-40 pointer-events-none`}
     >
-      <div className={`relative px-2.5 py-1.5 rounded-lg whitespace-nowrap text-center shadow-lg ${
+      <div className={`relative px-3 py-2 rounded-lg text-center shadow-lg max-w-[140px] md:max-w-[180px] ${
         isDone 
           ? 'bg-green-50 dark:bg-green-900/60 border-2 border-green-400 dark:border-green-600' 
           : 'bg-white dark:bg-[#1a1a1a] border-2 border-gray-300 dark:border-[#555] min-w-[32px]'
       }`}
         style={{ imageRendering: 'pixelated' }}
       >
-        <span 
-          style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', lineHeight: '1.6' }}
-          className={`${isDone ? 'text-green-800 dark:text-green-200' : 'text-gray-700 dark:text-gray-300'}`}
+        <div 
+          style={{ fontFamily: "'Press Start 2P', monospace", fontSize: '6px', lineHeight: '1.8' }}
+          className={`break-words ${isDone ? 'text-green-800 dark:text-green-200' : 'text-gray-700 dark:text-gray-300'}`}
         >
           {emoji && <span className="mr-1 text-[10px]">{emoji}</span>}
           {isDone ? text : <span className="typing-dots">{text.replace(/\.+$/, '')}</span>}
-        </span>
+        </div>
         <div className={`absolute ${position === 'top' ? 'top-full' : 'bottom-full'} left-1/2 -translate-x-1/2`}>
           <div className={`w-0 h-0 border-l-[6px] border-r-[6px] border-l-transparent border-r-transparent ${
             position === 'top'
@@ -209,7 +209,7 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
           const score = sim.result.excitementScore || 5;
           let emoji = sim.result.reactionEmoji || getReactionEmoji(score, idx);
           if (emoji.length > 2) emoji = getReactionEmoji(score, idx);
-          const text = sim.result.mainAttraction?.substring(0, 28) || sim.result.reaction?.substring(0, 28) || 'Reviewed!';
+          const text = sim.result.reaction || sim.result.mainAttraction || 'Reviewed!';
           bubbleData = { text, emoji, isDone: true };
         } else {
           // Thinking phase - just the animated ...
@@ -222,7 +222,7 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
             delete next[idx];
             return next;
           });
-        }, 3000 + Math.random() * 2000); // stay on screen for 3-5 seconds
+        }, 4000 + Math.random() * 3000); // stay on screen for 4-7 seconds
 
         return { ...prev, [idx]: bubbleData };
       });

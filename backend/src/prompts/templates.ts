@@ -274,7 +274,7 @@ export const PERSONA_SIMULATION_SCHEMA = {
     type: 'object',
     properties: {
       personaId: { type: 'string', description: "The exact ID of the persona simulated." },
-      reaction: { type: 'string', description: "A first-person reaction from this persona (3-5 sentences)." },
+      reaction: { type: 'string', description: "A first-person reaction from this persona (1-2 short sentences max)." },
       reactionEmoji: { type: 'string', description: "A single emoji that perfectly captures their reaction." },
       excitementScore: { type: 'integer', description: "1 to 10 scale of excitement." },
       concerns: { type: 'array', items: { type: 'string' }, description: "List of worries relative to the idea." },
