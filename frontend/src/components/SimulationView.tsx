@@ -247,7 +247,7 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.6, ease: 'easeOut' }}
-      className="w-full max-w-5xl flex flex-col items-center"
+      className="w-full max-w-7xl flex flex-col items-center"
     >
       <div className="z-10 text-center mb-6 space-y-3">
         <div className="inline-flex items-center justify-center gap-3 bg-white dark:bg-[#111] px-5 py-2.5 rounded-full shadow-sm border border-gray-200 dark:border-[#333] text-gray-700 dark:text-gray-300 font-medium text-sm">
@@ -259,7 +259,7 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
         </p>
       </div>
 
-      <div className="relative w-full max-w-[900px] aspect-[16/9] rounded-xl overflow-hidden border-4 border-[#2C2016] shadow-2xl" style={{ imageRendering: 'auto' }}>
+      <div className="relative w-full max-w-[1200px] aspect-[16/9] rounded-xl overflow-hidden border-4 border-[#2C2016] shadow-2xl" style={{ imageRendering: 'auto' }}>
         <img
           src="/assets/room.jpg"
           alt="Focus Group Room"
@@ -292,10 +292,11 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
               initial={{ opacity: 0, scale: 0, y: -20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ delay: idx * 0.15, type: 'spring', damping: 12, stiffness: 180 }}
-              className="absolute z-10 group"
+              className="absolute z-10 group flex flex-col items-center"
               style={{
                 left: `${pos.x}%`,
                 top: `${pos.y}%`,
+                width: '6.22%',
                 transform: 'translate(-50%, -50%)',
               }}
             >
@@ -310,12 +311,10 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
                 )}
               </AnimatePresence>
 
-              <div className="flex flex-col items-center gap-0.5">
+              <div className="flex flex-col items-center gap-0.5 w-full">
                 <div
-                  className={`relative transition-all duration-500 ${isDone ? 'drop-shadow-[0_0_6px_rgba(34,197,94,0.6)]' : ''}`}
+                  className={`relative transition-all duration-500 w-full aspect-square ${isDone ? 'drop-shadow-[0_0_6px_rgba(34,197,94,0.6)]' : ''}`}
                   style={{
-                    width: 56,
-                    height: 56,
                     animation: `
                       idle-bob-${idx % 3} ${1.8 + (idx % 5) * 0.3}s ease-in-out infinite,
                       idle-sway-${idx % 2} ${2.5 + (idx % 4) * 0.4}s ease-in-out infinite
