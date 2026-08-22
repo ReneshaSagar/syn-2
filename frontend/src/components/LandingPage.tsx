@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History, Settings } from 'lucide-react';
-import { fetchHistory, SimulationConfig, DEFAULT_CONFIG } from '../services/api';
+import { fetchHistory, type SimulationConfig, DEFAULT_CONFIG } from '../services/api';
 
 interface LandingPageProps {
   onSubmitIdea: (idea: string, config: SimulationConfig) => void;
