@@ -31,8 +31,9 @@ Once the simulation concludes, the user gets access to a 6-tab dashboard:
 2. **Audience (Focus Group):** Detailed breakdowns of every persona, their exact pain points, how much they'd be willing to pay, and their direct quotes.
 3. **Red Team:** A brutal, unbiased critique. The "Red Team" acts as the ultimate devil's advocate, actively trying to find reasons why the business will fail (regulatory risks, operational nightmares, market saturation).
 4. **Competitors:** Live web-search results detailing actual real-world competitors.
-5. **Where to Validate:** Actionable advice on where to find this audience in the real world (specific Subreddits, Discord servers, LinkedIn groups), complete with a "Draft Launch Post" button.
-6. **Synthetic R&D Head (Brainstorm):** A conversational AI interface where the founder can chat with their "Lead Researcher" to discuss the report, debate pivot strategies, and immediately generate new iterations of the idea.
+5. **Live Persona Debate:** An interactive courtroom where the user can pit two personas against each other. The user can watch them argue, interject as either the Pro or Con side, run the debate endlessly, and hit "End & Summarize" to get an objective conclusion from an AI moderator.
+6. **Where to Validate:** Actionable advice on where to find this audience in the real world (specific Subreddits, Discord servers, LinkedIn groups), complete with a "Draft Launch Post" button.
+7. **Synthetic R&D Head (Brainstorm):** A conversational AI interface where the founder can chat with their "Lead Researcher" to discuss the report, debate pivot strategies, and immediately generate new iterations of the idea.
 
 ---
 
@@ -61,5 +62,6 @@ We use a LangGraph-inspired pipeline where distinct AI agents run in parallel an
 - **Strict Anti-Hallucination Harness:** By breaking the task into 5 isolated agents and enforcing strict JSON schemas on every step, we completely bound the AI's context. The Simulator agent cannot hallucinate; it is mathematically anchored to the generated persona constraints.
 - **The Red Team:** We actively try to destroy the user's idea. Most AI tools are "yes men" that tell the user their idea is great. We tell them why it will fail so they can fix it before spending money.
 - **Authentic Asset Generation:** The "Draft Post" generator is explicitly prompted to hate "AI-speak" and corporate jargon. It writes authentic, platform-specific (Reddit/Twitter/HN) posts that sound like a real, humble founder.
+- **Interactive Persona Debates:** Unlike static AI reports, we allow the founder to pit two specific personas against each other in a live chatroom. The founder can even interject and argue on behalf of either side to dynamically stress-test specific objections before generating a final moderation summary.
 - **Full Historical Persistence:** Every competitor (with live URLs), Red Team attack, and chat conversation is preserved in the database. Users can switch tabs or reload past ideas without losing their chat memory with the Lead Researcher.
 - **Live Web Research:** We don't just hallucinate competitors; we use Tavily to search the live web.
