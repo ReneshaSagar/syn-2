@@ -178,7 +178,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           {/* Lens */}
                           <div className="space-y-2">
-                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Analysis Lens (Select up to 2)</label>
+                            <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Analysis Lens</label>
                             <div className="flex flex-wrap gap-2">
                               {[
                                 { id: 'market_fit', icon: Target, label: 'Market Fit' },
@@ -201,10 +201,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                                           if (currentLenses.length === 1) return prev;
                                           return { ...prev, lens: currentLenses.filter(l => l !== lens.id) };
                                         } else {
-                                          // Limit to 2 lenses
-                                          if (currentLenses.length >= 2) {
-                                            return { ...prev, lens: [currentLenses[1], lens.id as any] };
-                                          }
+                                          // Add the new lens without any cap
                                           return { ...prev, lens: [...currentLenses, lens.id as any] };
                                         }
                                       });
