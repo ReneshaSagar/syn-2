@@ -109,8 +109,9 @@
   content: '...';
   animation: typing 1.5s steps(4, end) infinite;
   display: inline-block;
-  width: 1em;
+  min-width: 2em;
   text-align: left;
+  white-space: nowrap;
 }
 
 @keyframes typing {
