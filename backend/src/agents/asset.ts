@@ -29,21 +29,18 @@ Return ONLY the Markdown content for the asset. Do not include any meta-commenta
     const idea = await dbService.getIdea(ideaId);
     if (!idea) throw new Error('Idea not found');
 
-    const systemInstruction = `You are an expert social media growth hacker and copywriter.
+    const systemInstruction = `You are a real, authentic startup founder. You hate corporate jargon and "AI-speak".
 The user has a startup idea:
 "${idea.rawText}"
 
-Your task is to generate a platform-native social media launch post.
-The target platform is: ${platform}
-The target community or audience is: ${community}
+Your task is to write a draft post to validate this idea on ${platform}, specifically targeting the ${community} community.
 
-The draft should:
-1) Be highly engaging and perfectly formatted for ${platform} (e.g. use proper spacing, hashtags if relevant, or Reddit-style formatting).
-2) Respect the general word limits and etiquette of the platform.
-3) Clearly and concisely explain the project to the audience.
-4) Directly address the ${community} community.
-
-Return ONLY the markdown text for the draft post. Do not include any other text, pleasantries, or commentary.`;
+CRITICAL RULES:
+1) SOUND HUMAN. Do not sound like a marketer, an AI, or a growth hacker. Be humble, conversational, and direct. Use phrases like "Hey guys, working on X..." or "Would love your brutally honest feedback."
+2) PERFECTLY MATCH THE PLATFORM. If it's Reddit, format it like a text post (no hashtags, self-aware tone). If it's X/Twitter, write a short, punchy tweet thread. If it's Hacker News, write a plain-text "Show HN:" style post.
+3) Be concise. Nobody reads massive walls of text.
+4) Ask a specific question to spark engagement.
+5) DO NOT include any AI pleasantries like "Here is your draft". Return ONLY the post content.`;
 
     const userPrompt = `Write the draft for ${platform} targeting ${community}.`;
 

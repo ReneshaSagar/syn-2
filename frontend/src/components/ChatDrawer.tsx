@@ -15,17 +15,18 @@ interface ChatDrawerProps {
   ideaId: string;
   context?: { type: 'persona' | 'general'; targetId?: string; personaName?: string };
   initialMessage?: string;
+  messages: ChatMessage[];
+  setMessages: (messages: ChatMessage[]) => void;
 }
 
-export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, ideaId, context, initialMessage }) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, ideaId, context, initialMessage, messages, setMessages }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const endOfMessagesRef = useRef<HTMLDivElement>(null);
 
-  // Initialize chat when opened with new context
+  // Initialize chat when opened with new context if empty
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && messages.length === 0) {
       if (initialMessage) {
         setMessages([{ role: 'assistant', content: initialMessage }]);
       } else {
@@ -35,7 +36,7 @@ export const ChatDrawer: React.FC<ChatDrawerProps> = ({ isOpen, onClose, ideaId,
         setMessages([{ role: 'assistant', content: welcomeText }]);
       }
     }
-  }, [isOpen, context?.targetId, initialMessage]);
+  }, [isOpen, context?.targetId, initialMessage, messages.length, setMessages]);
 
   useEffect(() => {
     endOfMessagesRef.current?.scrollIntoView({ behavior: 'smooth' });

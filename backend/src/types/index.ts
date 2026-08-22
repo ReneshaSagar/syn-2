@@ -131,6 +131,7 @@ export interface Competitor {
   threatLevel: string;
   category: string;
   source: string;
+  url?: string;
 }
 
 export interface CommunityRecommendation {
@@ -184,6 +185,10 @@ export interface Report {
   ideaId: string;
   insights: AggregateInsights;
   fullReportMarkdown: string;
+  redTeamReport?: RedTeamReport;
+  competitors?: Competitor[];
+  communityRecommendations?: CommunityRecommendation[];
+  versionHistory?: VersionSnapshot[];
   createdAt: Date;
 }
 

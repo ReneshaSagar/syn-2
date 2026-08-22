@@ -56,7 +56,10 @@ We use a LangGraph-inspired pipeline where distinct AI agents run in parallel an
 
 ---
 
-## 5. Key Differentiators to Emphasize in the Pitch
-- **Live Web Research:** We don't just hallucinate competitors; we use Tavily to search the live web.
+## 5. Key Differentiators & Engineering Highlights to Emphasize
+- **Mathematical Priority Bias:** If a user ranks a demographic segment higher, the backend mathematically rigs the focus group generation to spawn *more* of those personas. The insights are quantitatively biased towards the user's priority, saving them from manual prompt engineering.
+- **Strict Anti-Hallucination Harness:** By breaking the task into 5 isolated agents and enforcing strict JSON schemas on every step, we completely bound the AI's context. The Simulator agent cannot hallucinate; it is mathematically anchored to the generated persona constraints.
 - **The Red Team:** We actively try to destroy the user's idea. Most AI tools are "yes men" that tell the user their idea is great. We tell them why it will fail so they can fix it before spending money.
-- **Actionable Outputs:** We don't just give them a report; the *Where to Validate* tab gives them actual subreddits to visit, and the *Brainstorm* tab writes the Reddit post for them.
+- **Authentic Asset Generation:** The "Draft Post" generator is explicitly prompted to hate "AI-speak" and corporate jargon. It writes authentic, platform-specific (Reddit/Twitter/HN) posts that sound like a real, humble founder.
+- **Full Historical Persistence:** Every competitor (with live URLs), Red Team attack, and chat conversation is preserved in the database. Users can switch tabs or reload past ideas without losing their chat memory with the Lead Researcher.
+- **Live Web Research:** We don't just hallucinate competitors; we use Tavily to search the live web.

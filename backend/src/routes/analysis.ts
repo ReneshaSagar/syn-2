@@ -147,7 +147,10 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
 
   console.log(`API: Compiling final report markdown...`);
   const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, undefined, competitors, communityRecommendations, idea.config);
-  const savedReport = await dbService.saveReport(ideaId, insights, reportMarkdown);
+  const savedReport = await dbService.saveReport(ideaId, insights, reportMarkdown, {
+    competitors,
+    communityRecommendations
+  });
 
   return res.json({
     message: 'Insights and report generated successfully.',
@@ -180,6 +183,15 @@ router.post('/generate-red-team', asyncHandler(async (req: Request, res: Respons
 
   console.log(`API: Generating On-Demand Red Team Analysis for ${ideaId}`);
   const redTeamReport = await redTeamAgent.analyze(idea.rawText, personas, simulations, report.insights.segmentBreakdown, idea.config);
+  
+  // Save it into the existing report object
+  report.redTeamReport = redTeamReport;
+  await dbService.saveReport(ideaId, report.insights, report.fullReportMarkdown, {
+    redTeamReport,
+    competitors: report.competitors,
+    communityRecommendations: report.communityRecommendations,
+    versionHistory: report.versionHistory
+  });
   
   return res.json({ redTeamReport });
 }));

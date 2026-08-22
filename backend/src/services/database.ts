@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { Idea, IdeaAnalysis, Persona, Simulation, SimulationResult, AggregateInsights, Report, VersionSnapshot } from '../types';
+import { Idea, IdeaAnalysis, Persona, Simulation, SimulationResult, AggregateInsights, Report, VersionSnapshot, RedTeamReport, Competitor, CommunityRecommendation } from '../types';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -287,13 +287,27 @@ export const dbService = {
   /**
    * Save final report
    */
-  async saveReport(ideaId: string, insights: AggregateInsights, fullReportMarkdown: string): Promise<Report> {
+  async saveReport(
+    ideaId: string, 
+    insights: AggregateInsights, 
+    fullReportMarkdown: string,
+    extras?: {
+      redTeamReport?: RedTeamReport;
+      competitors?: Competitor[];
+      communityRecommendations?: CommunityRecommendation[];
+      versionHistory?: VersionSnapshot[];
+    }
+  ): Promise<Report> {
     const id = crypto.randomUUID();
     const report: Report = {
       id,
       ideaId,
       insights,
       fullReportMarkdown,
+      redTeamReport: extras?.redTeamReport,
+      competitors: extras?.competitors,
+      communityRecommendations: extras?.communityRecommendations,
+      versionHistory: extras?.versionHistory,
       createdAt: new Date()
     };
 

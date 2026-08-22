@@ -486,7 +486,8 @@ You must use the following sections exactly:
 13. Improvement Opportunities: Concrete action items to improve the idea.
 14. Actionable Roadmap: A comprehensive 5-7 step plan to execute the improvements.
 
-Make the style professional, insightful, and formatted cleanly with headers, tables, bullet points, and markdown highlights.`;
+Make the style professional, insightful, and formatted cleanly with headers, tables, bullet points, and markdown highlights.
+CRITICAL TONE INSTRUCTION: You MUST adopt a highly concise, direct, and conversational human tone. Do not sound like an AI. Do not use robotic phrases like "In summary", "It is important to note", or formal jargon. Talk like a sharp, practical startup founder or product manager. Use bullet points heavily to break up text.`;
 
 export function formatReportGeneratorPrompt(ideaText: string, personas: any[], simulations: any[], insights: any, redTeamReport?: any, competitors?: any[], communityRecommendations?: any[]): string {
   const personaList = personas.map(p => `- **${p.name}** (${p.role}, Age ${p.age}): ${p.personalityTraits.join(', ')}`).join('\n');

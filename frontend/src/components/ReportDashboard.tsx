@@ -136,6 +136,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatContext, setChatContext] = useState<{ type: 'persona' | 'general'; targetId?: string; personaName?: string }>();
   const [initialChatMessage, setInitialChatMessage] = useState<string>('');
+  const [chatDrawerMessages, setChatDrawerMessages] = useState<Record<string, { role: 'user'|'assistant', content: string }[]>>({});
 
   // Floating Cursor State is disabled for now
 
@@ -854,7 +855,14 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                            <Building className="w-6 h-6 text-gray-500" />
                          </div>
                          <div>
-                           <h3 className="text-xl font-bold text-gray-900 dark:text-white">{comp.name}</h3>
+                           <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                             {comp.name}
+                             {comp.url && (
+                               <a href={comp.url} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-blue-500 transition-colors">
+                                 <ExternalLink className="w-4 h-4" />
+                               </a>
+                             )}
+                           </h3>
                            <div className="flex gap-2 mt-1">
                              <span className="text-xs bg-gray-100 dark:bg-[#111] text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded uppercase font-semibold">{comp.category}</span>
                              <span className={`text-xs px-2 py-0.5 rounded uppercase font-bold ${getRiskColor(comp.threatLevel)}`}>{comp.threatLevel} Threat</span>
@@ -1140,6 +1148,8 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
         ideaId={report.ideaId}
         context={chatContext}
         initialMessage={initialChatMessage}
+        messages={chatDrawerMessages[chatContext?.targetId || 'general'] || []}
+        setMessages={(newMessages) => setChatDrawerMessages(prev => ({ ...prev, [chatContext?.targetId || 'general']: newMessages }))}
       />
 
       {/* Asset Generation Modal */}

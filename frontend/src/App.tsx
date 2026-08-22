@@ -174,9 +174,9 @@ function App() {
       setSimulations(data.simulations || []);
       setReport(data.report);
       setVersionHistory(data.versionHistory || []);
-      setRedTeamReport(null);
-      setCompetitors([]);
-      setCommunityRecommendations([]);
+      setRedTeamReport(data.report?.redTeamReport || null);
+      setCompetitors(data.report?.competitors || []);
+      setCommunityRecommendations(data.report?.communityRecommendations || []);
       
       setTimeout(() => {
         setAppState('report');

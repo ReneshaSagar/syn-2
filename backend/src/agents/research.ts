@@ -124,9 +124,10 @@ ${communitiesWebData}`;
               differenceFromOurIdea: { type: "string" },
               threatLevel: { type: "string", enum: ["high", "medium", "low"] },
               category: { type: "string", enum: ["direct", "indirect", "alternative", "adjacent"] },
-              source: { type: "string", enum: ["researched", "inferred"] }
+              source: { type: "string", enum: ["researched", "inferred"] },
+              url: { type: "string", description: "Direct URL to the competitor's website" }
             },
-            required: ["name", "description", "targetAudience", "keyFeatures", "strengths", "weaknesses", "differenceFromOurIdea", "threatLevel", "category", "source"]
+            required: ["name", "description", "targetAudience", "keyFeatures", "strengths", "weaknesses", "differenceFromOurIdea", "threatLevel", "category", "source", "url"]
           }
         },
         communityRecommendations: {
