@@ -1,9 +1,10 @@
 import { llmService } from '../services/llm';
-import { Persona, IdeaAnalysis } from '../types';
+import { Persona, IdeaAnalysis, SimulationConfig } from '../types';
 import {
   AUDIENCE_GENERATOR_SYSTEM,
   formatAudienceGeneratorPrompt,
-  AUDIENCE_GENERATOR_SCHEMA
+  AUDIENCE_GENERATOR_SCHEMA,
+  getLensInstruction
 } from '../prompts/templates';
 import * as crypto from 'crypto';
 
@@ -11,7 +12,7 @@ export const generatorAgent = {
   /**
    * Generates personas based on dynamic audience composition.
    */
-  async generateAudience(ideaText: string, analysis: IdeaAnalysis): Promise<Persona[]> {
+  async generateAudience(ideaText: string, analysis: IdeaAnalysis, config?: SimulationConfig): Promise<Persona[]> {
     if (!ideaText) {
       throw new Error('Idea text is required to generate an audience.');
     }
@@ -22,15 +23,17 @@ export const generatorAgent = {
       segments = [{ name: 'General Audience', description: 'General users who might be interested in the concept.', count: 5 }];
     }
 
+    const lensInstructions = getLensInstruction(config);
+    const enhancedSystemInstruction = AUDIENCE_GENERATOR_SYSTEM + '\n' + lensInstructions;
+
     console.log('Generating synthetic audience in parallel batches...');
     
     try {
       const batchPromises = segments.map(async (segment) => {
-        const systemInstruction = AUDIENCE_GENERATOR_SYSTEM;
         const userPrompt = formatAudienceGeneratorPrompt(ideaText, analysis, segment.name, segment.description, segment.count);
         
         const personas = await llmService.callLlmJSON<Persona[]>(
-          systemInstruction,
+          enhancedSystemInstruction,
           userPrompt,
           'openai/gpt-4o-mini',
           AUDIENCE_GENERATOR_SCHEMA

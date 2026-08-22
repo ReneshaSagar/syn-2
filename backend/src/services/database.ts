@@ -70,12 +70,13 @@ export const dbService = {
   /**
    * Save a new idea & its analysis
    */
-  async saveIdea(rawText: string, analysis?: IdeaAnalysis): Promise<Idea> {
+  async saveIdea(rawText: string, analysis?: IdeaAnalysis, config?: any): Promise<Idea> {
     const id = crypto.randomUUID();
     const idea: Idea = {
       id,
       rawText,
       analysis,
+      config,
       createdAt: new Date()
     };
 
@@ -91,6 +92,7 @@ export const dbService = {
           business_type: analysis?.businessType,
           competitors: analysis?.competitors,
           key_value_proposition: analysis?.keyValueProposition
+          // Note: not adding config to supabase schema for now since this is primarily a local prototype
         });
 
       if (!error) return idea;
@@ -112,7 +114,7 @@ export const dbService = {
         .select('*')
         .eq('id', id)
         .single();
-
+      
       if (!error && data) {
         return {
           id: data.id,
@@ -123,8 +125,11 @@ export const dbService = {
             stakeholders: data.stakeholders,
             businessType: data.business_type,
             competitors: data.competitors,
-            keyValueProposition: data.key_value_proposition
-          } as any,
+            keyValueProposition: data.key_value_proposition,
+            audienceComposition: [],
+            experts: [],
+            summary: ''
+          },
           createdAt: new Date(data.created_at)
         } as any;
       }

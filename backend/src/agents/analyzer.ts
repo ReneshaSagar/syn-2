@@ -1,7 +1,7 @@
 import { llmService } from '../services/llm';
-import { IdeaAnalysis } from '../types';
+import { IdeaAnalysis, SimulationConfig } from '../types';
 import {
-  IDEA_ANALYZER_SYSTEM,
+  getIdeaAnalyzerSystem,
   formatIdeaAnalyzerPrompt,
   IDEA_ANALYZER_SCHEMA
 } from '../prompts/templates';
@@ -10,12 +10,12 @@ export const analyzerAgent = {
   /**
    * Run the Idea Analyzer Agent
    */
-  async analyzeIdea(ideaText: string): Promise<IdeaAnalysis> {
+  async analyzeIdea(ideaText: string, config?: SimulationConfig): Promise<IdeaAnalysis> {
     if (!ideaText || ideaText.trim() === '') {
       throw new Error('Idea text cannot be empty.');
     }
 
-    const systemInstruction = IDEA_ANALYZER_SYSTEM;
+    const systemInstruction = getIdeaAnalyzerSystem(config);
     const userPrompt = formatIdeaAnalyzerPrompt(ideaText);
 
     try {

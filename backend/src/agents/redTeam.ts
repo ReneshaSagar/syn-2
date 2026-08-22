@@ -1,5 +1,6 @@
 import { llmService } from '../services/llm';
-import { Persona, Simulation } from '../types';
+import { Persona, Simulation, SimulationConfig } from '../types';
+import { getLensInstruction } from '../prompts/templates';
 
 export interface RedTeamReport {
   overallRiskLevel: string;
@@ -17,9 +18,12 @@ export const redTeamAgent = {
     ideaText: string,
     personas: Persona[],
     simulations: Simulation[],
-    segmentAnalysis?: any[]
+    segmentAnalysis?: any[],
+    config?: SimulationConfig
   ): Promise<RedTeamReport> {
-    const systemInstruction = 'You are a ruthless devil\'s advocate and red team analyst. Your ONLY job is to find fatal flaws, hidden assumptions, and reasons why this idea will FAIL. You are not here to be supportive. Analyze the idea, the persona reactions, and find: hidden assumptions the founder is making, weak target markets, existing alternatives that personas mentioned, adoption barriers, pricing problems, technical/privacy/trust concerns, competition signals, and contradictions between different persona responses. Be specific and cite evidence from the persona reactions. Rate overall risk level as critical/high/medium/low.';
+    const lensInstructions = getLensInstruction(config);
+    const systemInstruction = `You are a ruthless devil's advocate and red team analyst. Your ONLY job is to find fatal flaws, hidden assumptions, and reasons why this idea will FAIL. You are not here to be supportive. Analyze the idea, the persona reactions, and find: hidden assumptions the founder is making, weak target markets, existing alternatives that personas mentioned, adoption barriers, pricing problems, technical/privacy/trust concerns, competition signals, and contradictions between different persona responses. Be specific and cite evidence from the persona reactions. Rate overall risk level as critical/high/medium/low.
+${lensInstructions}`;
     
     const personaSummary = personas.map(p => {
       const sim = simulations.find(s => s.personaId === p.id);

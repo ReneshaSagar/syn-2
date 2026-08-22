@@ -1,8 +1,9 @@
 import { llmService } from '../services/llm';
-import { AggregateInsights, Persona, Simulation } from '../types';
+import { AggregateInsights, Persona, Simulation, SimulationConfig } from '../types';
 import {
   REPORT_GENERATOR_SYSTEM,
-  formatReportGeneratorPrompt
+  formatReportGeneratorPrompt,
+  getLensInstruction
 } from '../prompts/templates';
 
 export const reporterAgent = {
@@ -16,13 +17,15 @@ export const reporterAgent = {
     insights: AggregateInsights,
     redTeamReport?: any,
     competitors?: any[],
-    communityRecommendations?: any[]
+    communityRecommendations?: any[],
+    config?: SimulationConfig
   ): Promise<string> {
     if (!ideaText) {
       throw new Error('Idea text is required to generate the report.');
     }
     
-    const systemInstruction = REPORT_GENERATOR_SYSTEM;
+    const lensInstructions = getLensInstruction(config);
+    const systemInstruction = REPORT_GENERATOR_SYSTEM + '\n' + lensInstructions;
     const userPrompt = formatReportGeneratorPrompt(ideaText, personas, simulations, insights, redTeamReport, competitors, communityRecommendations);
 
     try {

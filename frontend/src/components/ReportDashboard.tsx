@@ -263,12 +263,28 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
               Analysis Complete
             </div>
+            
             <h1 className="text-5xl font-semibold tracking-tight text-gray-900 dark:text-white transition-colors duration-500">
               Simulation Insights
             </h1>
+            
             <p className="text-xl text-gray-500 dark:text-gray-400 font-light transition-colors duration-500">
               Market reaction based on <span className="font-medium text-gray-800 dark:text-gray-200">{analysis?.industry || 'target'}</span> synthetic segment.
             </p>
+            
+            {/* R&D Settings Badges */}
+            <div className="flex flex-wrap gap-2 pt-2">
+              <span className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500 flex items-center mr-1">R&D Settings:</span>
+              <span className="px-2.5 py-1 bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium border border-gray-200 dark:border-[#333]">
+                {analysis?.config?.lens ? `Lens: ${analysis.config.lens.replace('_', ' ').toUpperCase()}` : 'Lens: MARKET FIT'}
+              </span>
+              <span className="px-2.5 py-1 bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium border border-gray-200 dark:border-[#333]">
+                {analysis?.config?.depth ? `Depth: ${analysis.config.depth.toUpperCase()}` : 'Depth: STANDARD'}
+              </span>
+              <span className="px-2.5 py-1 bg-gray-100 dark:bg-[#1a1a1a] text-gray-700 dark:text-gray-300 rounded-md text-xs font-medium border border-gray-200 dark:border-[#333]">
+                {analysis?.config?.region ? `Region: ${analysis.config.region.replace('_', ' ').toUpperCase()}` : 'Region: GLOBAL'}
+              </span>
+            </div>
           </div>
           <div className="flex gap-4 items-center">
              <button 

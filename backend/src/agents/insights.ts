@@ -1,9 +1,10 @@
 import { llmService } from '../services/llm';
-import { AggregateInsights, Persona, Simulation, SegmentAnalysis, SimulationConfidence } from '../types';
+import { AggregateInsights, Persona, Simulation, SegmentAnalysis, SimulationConfidence, SimulationConfig } from '../types';
 import {
   INSIGHT_GENERATOR_SYSTEM,
   formatInsightGeneratorPrompt,
-  INSIGHT_GENERATOR_SCHEMA
+  INSIGHT_GENERATOR_SCHEMA,
+  getLensInstruction
 } from '../prompts/templates';
 
 export const insightsAgent = {
@@ -13,7 +14,8 @@ export const insightsAgent = {
   async generateInsights(
     ideaText: string,
     simulations: Simulation[],
-    personas: Persona[]
+    personas: Persona[],
+    config?: SimulationConfig
   ): Promise<AggregateInsights> {
     if (!ideaText) {
       throw new Error('Idea text is required to generate insights.');
@@ -76,7 +78,8 @@ export const insightsAgent = {
     const realOverallInterestScore = Math.round((totalInterest / simulations.length) * 10);
     const realAdoptionProbability = Math.round((totalWouldPayCount / simulations.length) * 100);
 
-    const systemInstruction = INSIGHT_GENERATOR_SYSTEM;
+    const lensInstructions = getLensInstruction(config);
+    const systemInstruction = INSIGHT_GENERATOR_SYSTEM + '\n' + lensInstructions;
     const userPrompt = formatInsightGeneratorPrompt(ideaText, simulations, computedSegments);
 
     try {

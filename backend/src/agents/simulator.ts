@@ -1,9 +1,10 @@
 import { llmService } from '../services/llm';
-import { Persona, SimulationResult } from '../types';
+import { Persona, SimulationResult, SimulationConfig } from '../types';
 import {
   PERSONA_SIMULATION_SYSTEM,
   formatPersonaSimulationPrompt,
-  PERSONA_SIMULATION_SCHEMA
+  PERSONA_SIMULATION_SCHEMA,
+  getLensInstruction
 } from '../prompts/templates';
 
 interface BatchSimulationItem {
@@ -31,11 +32,13 @@ export const simulatorAgent = {
    */
   async simulatePersonaBatch(
     ideaText: string,
-    personas: Persona[]
+    personas: Persona[],
+    config?: SimulationConfig
   ): Promise<BatchSimulationItem[]> {
     if (personas.length === 0) return [];
 
-    const systemInstruction = PERSONA_SIMULATION_SYSTEM;
+    const lensInstructions = getLensInstruction(config);
+    const systemInstruction = PERSONA_SIMULATION_SYSTEM + '\n' + lensInstructions;
     const userPrompt = formatPersonaSimulationPrompt(ideaText, personas);
 
     try {
@@ -53,7 +56,6 @@ export const simulatorAgent = {
       return results;
     } catch (error) {
       console.error('Error simulating persona batch, using local fallbacks:', error);
-      // Fallback: return default response for every persona in this batch to keep the workflow moving
       return personas.map(p => ({
         personaId: p.id,
         reaction: `As ${p.name} (${p.role}), I think this idea is interesting but I have minor reservations about price, learning curve, and security.`,
@@ -76,12 +78,12 @@ export const simulatorAgent = {
   },
 
   /**
-   * Simulates reactions for all personas in parallel batches (e.g. 6 personas per batch).
-   * Reduces API requests from 18 to 3, avoiding 429 Rate Limit issues.
+   * Simulates reactions for all personas in parallel batches.
    */
   async simulateAudience(
     ideaText: string,
     personas: Persona[],
+    config?: SimulationConfig,
     batchSize: number = 6
   ): Promise<{ personaId: string; result: SimulationResult }[]> {
     console.log(`Starting audience simulation for ${personas.length} personas in batches of ${batchSize}...`);
@@ -91,12 +93,10 @@ export const simulatorAgent = {
       batches.push(personas.slice(i, i + batchSize));
     }
 
-    // Run batches in parallel (only 3 calls total, well within 15 RPM free limit)
-    const batchPromises = batches.map(batch => this.simulatePersonaBatch(ideaText, batch));
+    const batchPromises = batches.map(batch => this.simulatePersonaBatch(ideaText, batch, config));
     const batchResults = await Promise.all(batchPromises);
     const flatResults = batchResults.flat();
 
-    // Map results back, matching personaId to the result, ensuring every persona has an associated result
     const mappedResults = personas.map(persona => {
       const match = flatResults.find(r => r.personaId === persona.id);
       
@@ -117,7 +117,6 @@ export const simulatorAgent = {
         questions: match.questions,
         whatWouldChangeTheirMind: match.whatWouldChangeTheirMind
       } : {
-        // Safe ultimate fallback in case of ID hallucination or mismatched keys
         reaction: `As ${persona.name} (${persona.role}), I find the concept promising but need more clarity on user flows and integration.`,
         excitementScore: 6,
         concerns: ['Usability concerns'],

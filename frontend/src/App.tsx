@@ -7,7 +7,8 @@ import { Moon, Sun } from 'lucide-react';
 import { 
   analyzeIdea, generateAudience, simulate, generateReport, loadIdeaState,
   type IdeaAnalysis, type Persona, type Simulation, type Report,
-  type RedTeamReport, type Competitor, type CommunityRecommendation, type VersionSnapshot
+  type RedTeamReport, type Competitor, type CommunityRecommendation, type VersionSnapshot,
+  type SimulationConfig, DEFAULT_CONFIG
 } from './services/api';
 
 type AppState = 'landing' | 'clarification' | 'simulation' | 'report';
@@ -25,6 +26,7 @@ function App() {
   const [competitors, setCompetitors] = useState<Competitor[]>([]);
   const [communityRecommendations, setCommunityRecommendations] = useState<CommunityRecommendation[]>([]);
   const [versionHistory, setVersionHistory] = useState<VersionSnapshot[]>([]);
+  const [activeConfig, setActiveConfig] = useState<SimulationConfig>(DEFAULT_CONFIG);
 
   const [originalIdea, setOriginalIdea] = useState('');
   const [clarificationQuestions, setClarificationQuestions] = useState<string[]>([]);
@@ -49,16 +51,17 @@ function App() {
     setIsDark(!isDark);
   };
 
-  const startSimulationProcess = async (idea: string, skipClarification: boolean = false) => {
+  const startSimulationProcess = async (idea: string, config: SimulationConfig = activeConfig, skipClarification: boolean = false) => {
     try {
       if (!skipClarification) {
         setOriginalIdea(idea);
+        setActiveConfig(config);
       }
       setAppState('simulation');
       
       // Step 1: Analyze Idea
       setSimStatus('analyzing');
-      const analysisResult = await analyzeIdea(idea);
+      const analysisResult = await analyzeIdea(idea, config);
       setAnalysis(analysisResult.analysis);
 
       // Handle Clarification Step
@@ -72,17 +75,17 @@ function App() {
 
       // Step 2: Generate Audience
       setSimStatus('generating');
-      const audienceResult = await generateAudience(ideaId);
+      const audienceResult = await generateAudience(ideaId, config);
       setPersonas(audienceResult.personas);
 
       // Step 3: Simulate Reactions
       setSimStatus('simulating');
-      const simResult = await simulate(ideaId);
+      const simResult = await simulate(ideaId, config);
       setSimulations(simResult.simulations);
 
       // Step 4: Generate Report
       setSimStatus('done');
-      const reportResult = await generateReport(ideaId);
+      const reportResult = await generateReport(ideaId, config);
       setReport(reportResult.report);
       if (reportResult.redTeamReport) setRedTeamReport(reportResult.redTeamReport);
       if (reportResult.competitors) setCompetitors(reportResult.competitors);
@@ -158,7 +161,7 @@ function App() {
 
       {appState === 'landing' && (
         <LandingPage 
-          onSubmitIdea={(idea) => startSimulationProcess(idea, false)} 
+          onSubmitIdea={(idea, config) => startSimulationProcess(idea, config, false)} 
           onLoadHistory={handleLoadHistory}
         />
       )}

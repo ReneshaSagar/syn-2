@@ -25,14 +25,15 @@ const asyncHandler = (fn: (req: Request, res: Response) => Promise<any>) => {
  * Dissects raw idea text and extracts structured industry analysis metadata.
  */
 router.post('/analyze-idea', asyncHandler(async (req: Request, res: Response) => {
-  const { idea } = req.body;
+  const { idea, config } = req.body;
   if (!idea || typeof idea !== 'string' || idea.trim() === '') {
     return res.status(400).json({ error: 'idea string is required in request body.' });
   }
 
   console.log('API: Analyzing idea...');
-  const analysis = await analyzerAgent.analyzeIdea(idea);
-  const savedIdea = await dbService.saveIdea(idea, analysis);
+  const analysis = await analyzerAgent.analyzeIdea(idea, config);
+  analysis.config = config; // Include config in analysis payload
+  const savedIdea = await dbService.saveIdea(idea, analysis, config);
 
   return res.json({
     message: 'Idea analyzed and saved successfully.',
@@ -61,7 +62,7 @@ router.post('/generate-audience', asyncHandler(async (req: Request, res: Respons
   }
 
   console.log(`API: Generating audience personas for idea ${ideaId}...`);
-  const personas = await generatorAgent.generateAudience(idea.rawText, idea.analysis);
+  const personas = await generatorAgent.generateAudience(idea.rawText, idea.analysis, idea.config);
   const savedPersonas = await dbService.savePersonas(ideaId, personas);
 
   return res.json({
@@ -92,7 +93,10 @@ router.post('/simulate', asyncHandler(async (req: Request, res: Response) => {
   }
 
   console.log(`API: Simulating reactions for ${personas.length} personas...`);
-  const simulations = await simulatorAgent.simulateAudience(idea.rawText, personas);
+  let batchSize = 6;
+  if (idea.config?.depth === 'quick') batchSize = 8;
+  if (idea.config?.depth === 'deep') batchSize = 5;
+  const simulations = await simulatorAgent.simulateAudience(idea.rawText, personas, idea.config, batchSize);
   const savedSims = await dbService.saveSimulations(ideaId, simulations);
 
   return res.json({
@@ -125,16 +129,15 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
   }
 
   console.log(`API: Analyzing simulations and generating insights for idea ${ideaId}...`);
-  const insights = await insightsAgent.generateInsights(idea.rawText, simulations, personas);
+  const insights = await insightsAgent.generateInsights(idea.rawText, simulations, personas, idea.config);
 
   console.log(`API: Running competitor research and red team analysis...`);
   let competitors: any[] | undefined = undefined;
   let communityRecommendations: any[] | undefined = undefined;
-  let redTeamReport: any = undefined;
 
   try {
     if (idea.analysis) {
-      const researchResult = await researchAgent.research(idea.rawText, idea.analysis);
+      const researchResult = await researchAgent.research(idea.rawText, idea.analysis, idea.config);
       competitors = researchResult.competitors;
       communityRecommendations = researchResult.communityRecommendations;
     }
@@ -143,11 +146,8 @@ router.post('/generate-report', asyncHandler(async (req: Request, res: Response)
   }
 
   console.log(`API: Compiling final report markdown...`);
-  const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, undefined, competitors, communityRecommendations);
+  const reportMarkdown = await reporterAgent.generateReport(idea.rawText, personas, simulations, insights, undefined, competitors, communityRecommendations, idea.config);
   const savedReport = await dbService.saveReport(ideaId, insights, reportMarkdown);
-
-  // We save research directly to the database alongside report here so it can be loaded on history
-  // Using an updated saveReport function or appending to the idea object. For now we return it.
 
   return res.json({
     message: 'Insights and report generated successfully.',
@@ -179,11 +179,7 @@ router.post('/generate-red-team', asyncHandler(async (req: Request, res: Respons
   }
 
   console.log(`API: Generating On-Demand Red Team Analysis for ${ideaId}`);
-  const redTeamReport = await redTeamAgent.analyze(idea.rawText, personas, simulations, report.insights.segmentBreakdown);
-
-  // Save the red team report into the database alongside the existing report
-  // (In a real DB you'd update the row; for FileStoreDB we can add a method or just return it and let frontend handle it)
-  // For now we'll just return it so the frontend can display it.
+  const redTeamReport = await redTeamAgent.analyze(idea.rawText, personas, simulations, report.insights.segmentBreakdown, idea.config);
   
   return res.json({ redTeamReport });
 }));

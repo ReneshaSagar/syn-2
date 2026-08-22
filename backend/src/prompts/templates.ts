@@ -1,15 +1,68 @@
 
+import { SimulationConfig, DEFAULT_CONFIG } from '../types';
+
+// ==========================================
+// CONFIG HELPERS
+// ==========================================
+
+const LENS_DESCRIPTIONS: Record<string, string> = {
+  market_fit: 'Focus on PRODUCT-MARKET FIT: would users actually switch to this? Is there real demand? Do people need this?',
+  revenue: 'Focus on REVENUE and MONETIZATION: willingness to pay, pricing objections, revenue model viability, monetization gaps, unit economics.',
+  growth: 'Focus on GROWTH and VIRALITY: shareability, network effects, word-of-mouth potential, acquisition channels, viral loops, referral mechanics.',
+  risk: 'Focus on RISK and FEASIBILITY: technical barriers, regulatory concerns, market timing, competitive moats, execution risk, legal liability.',
+  ux: 'Focus on USER EXPERIENCE: usability, onboarding friction, accessibility, learning curve, delight moments, first-time user experience.'
+};
+
+const DEPTH_DESCRIPTIONS: Record<string, string> = {
+  quick: 'Keep analysis concise and high-level. Focus on the most critical signals only.',
+  standard: 'Provide balanced analysis with moderate detail.',
+  deep: 'Provide extremely thorough, detailed analysis. Leave no stone unturned. Be exhaustive.'
+};
+
+const REGION_LABELS: Record<string, string> = {
+  global: 'GLOBAL — include diverse geographic representation.',
+  north_america: 'NORTH AMERICA (USA & Canada) — all personas, competitors, pricing, and cultural context should be specific to this region.',
+  europe: 'EUROPE — all personas, competitors, pricing, and cultural context should be specific to European markets.',
+  south_asia: 'SOUTH ASIA (India, Pakistan, Bangladesh, Sri Lanka) — all personas, competitors, pricing, and cultural context should be specific to this region.',
+  east_asia: 'EAST ASIA (China, Japan, South Korea, Southeast Asia) — all personas, competitors, pricing, and cultural context should be specific to this region.',
+  latam: 'LATIN AMERICA (Brazil, Mexico, Argentina, etc.) — all personas, competitors, pricing, and cultural context should be specific to this region.',
+  mena: 'MIDDLE EAST & NORTH AFRICA — all personas, competitors, pricing, and cultural context should be specific to this region.',
+  africa: 'SUB-SAHARAN AFRICA — all personas, competitors, pricing, and cultural context should be specific to this region.'
+};
+
+export function getLensInstruction(config?: SimulationConfig): string {
+  const c = config || DEFAULT_CONFIG;
+  return `
+PRIORITY LENS: ${LENS_DESCRIPTIONS[c.lens] || LENS_DESCRIPTIONS.market_fit}
+ANALYSIS DEPTH: ${DEPTH_DESCRIPTIONS[c.depth] || DEPTH_DESCRIPTIONS.standard}
+GEOGRAPHIC FOCUS: ${REGION_LABELS[c.region] || REGION_LABELS.global}
+Weight your entire analysis, persona reactions, concerns, rankings, and recommendations HEAVILY toward the priority lens above.`;
+}
+
+export function getPersonaCount(config?: SimulationConfig): number {
+  const depth = config?.depth || 'standard';
+  if (depth === 'quick') return 8;
+  if (depth === 'deep') return 25;
+  return 15;
+}
 
 // ==========================================
 // 1. IDEA ANALYZER AGENT
 // ==========================================
 
-export const IDEA_ANALYZER_SYSTEM = `You are a startup CTO, veteran product manager, and industry analyst.
+export function getIdeaAnalyzerSystem(config?: SimulationConfig): string {
+  const count = getPersonaCount(config);
+  return `You are a startup CTO, veteran product manager, and industry analyst.
 Your task is to dissect a user's submitted idea (which could be a startup idea, feature, ad, or landing page) and extract structured metadata.
 Analyze the industry, primary target audience, secondary stakeholders, business type (B2B, B2C, SaaS, etc.), key potential competitors, and the key value proposition.
 Ensure your analysis is realistic and objective. Don't add hype.
-Determine the optimal composition of a 20-person synthetic audience panel. Identify distinct segments (e.g. for an AI study planner: 8 Students, 4 Educators, 3 Founders, 3 Engineers, 2 Skeptics). Each segment needs a name, count, and description. Counts must sum to exactly 20.
-If the idea is too vague, short, or lacks enough detail for you to determine a highly specific industry and target audience, you MUST set needsMoreInfo to true, and provide 2-3 clarificationQuestions asking the user for the specific missing context. If it's detailed enough to proceed, set needsMoreInfo to false.`;
+Determine the optimal composition of a ${count}-person synthetic audience panel. Identify distinct segments (e.g. for an AI study planner: ${Math.round(count*0.4)} Students, ${Math.round(count*0.2)} Educators, ${Math.round(count*0.15)} Founders, ${Math.round(count*0.15)} Engineers, ${Math.round(count*0.1)} Skeptics). Each segment needs a name, count, and description. Counts must sum to exactly ${count}.
+If the idea is too vague, short, or lacks enough detail for you to determine a highly specific industry and target audience, you MUST set needsMoreInfo to true, and provide 2-3 clarificationQuestions asking the user for the specific missing context. If it's detailed enough to proceed, set needsMoreInfo to false.
+${getLensInstruction(config)}`;
+}
+
+// Keep old export for backward compat (used by workflow.ts)
+export const IDEA_ANALYZER_SYSTEM = getIdeaAnalyzerSystem();
 
 export function formatIdeaAnalyzerPrompt(ideaText: string, mode?: string): string {
   return `Please analyze the following idea:

@@ -1,5 +1,6 @@
 import { llmService } from '../services/llm';
-import { IdeaAnalysis } from '../types';
+import { IdeaAnalysis, SimulationConfig } from '../types';
+import { getLensInstruction } from '../prompts/templates';
 
 async function performWebSearch(query: string): Promise<string> {
   const apiKey = process.env.TAVILY_API_KEY;
@@ -76,19 +77,22 @@ export interface ResearchResult {
 export const researchAgent = {
   async research(
     ideaText: string,
-    analysis: IdeaAnalysis
+    analysis: IdeaAnalysis,
+    config?: SimulationConfig
   ): Promise<ResearchResult> {
+    const region = config?.region !== 'global' && config?.region ? config.region.replace('_', ' ') : 'global';
     
     // Execute live web searches concurrently
-    const competitorsQuery = `top competitors and alternatives for ${analysis.industry} targeting ${analysis.targetAudience}`;
-    const communitiesQuery = `best online communities forums subreddits for ${analysis.industry} and ${analysis.targetAudience}`;
+    const competitorsQuery = `top competitors and alternatives for ${analysis.industry} targeting ${analysis.targetAudience} in ${region}`;
+    const communitiesQuery = `best online communities forums subreddits for ${analysis.industry} and ${analysis.targetAudience} in ${region}`;
     
     const [competitorsWebData, communitiesWebData] = await Promise.all([
       performWebSearch(competitorsQuery),
       performWebSearch(communitiesQuery)
     ]);
 
-    const systemInstruction = 'You are a market research analyst and community intelligence expert. Given a product idea, its industry analysis, and LIVE WEB SEARCH RESULTS, you must: 1) Identify 5-8 competitors or similar products based on the web results and your own knowledge. 2) Identify 6-10 online communities/platforms where the target audience actively discusses problems this product solves based on the web results. Provide the platform name, specific community (e.g. r/SaaS), relevance score (0-100), reason for relevance, audience type, feedback type, and a direct URL to the community (e.g., https://reddit.com/r/SaaS). IMPORTANT: Rely heavily on the Live Web Search Data to ensure accuracy. If unsure, clearly mark source as inferred.';
+    const lensInstructions = getLensInstruction(config);
+    const systemInstruction = `You are a market research analyst and community intelligence expert. Given a product idea, its industry analysis, and LIVE WEB SEARCH RESULTS, you must: 1) Identify 5-8 competitors or similar products based on the web results and your own knowledge. 2) Identify 6-10 online communities/platforms where the target audience actively discusses problems this product solves based on the web results. Provide the platform name, specific community (e.g. r/SaaS), relevance score (0-100), reason for relevance, audience type, feedback type, and a direct URL to the community (e.g., https://reddit.com/r/SaaS). IMPORTANT: Rely heavily on the Live Web Search Data to ensure accuracy. If unsure, clearly mark source as inferred.\n${lensInstructions}`;
     
     const userPrompt = `Idea: ${ideaText}
 

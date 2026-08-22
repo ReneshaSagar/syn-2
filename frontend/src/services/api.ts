@@ -24,6 +24,7 @@ export interface IdeaAnalysis {
   audienceComposition: AudienceSegment[];
   experts: string[];
   summary: string;
+  config?: SimulationConfig;
 }
 
 export interface Persona {
@@ -167,6 +168,18 @@ export interface Report {
 }
 
 // Full pipeline result (from /full-analysis or /pivot)
+export interface SimulationConfig {
+  lens: 'market_fit' | 'revenue' | 'growth' | 'risk' | 'ux';
+  depth: 'quick' | 'standard' | 'deep';
+  region: 'global' | 'north_america' | 'europe' | 'south_asia' | 'east_asia' | 'latam' | 'mena' | 'africa';
+}
+
+export const DEFAULT_CONFIG: SimulationConfig = {
+  lens: 'market_fit',
+  depth: 'standard',
+  region: 'global'
+};
+
 export interface FullPipelineResult {
   ideaId: string;
   analyzedIdea: IdeaAnalysis;
@@ -185,23 +198,23 @@ export interface FullPipelineResult {
 // API FUNCTIONS (keep all existing ones)
 // ==========================================
 
-export const analyzeIdea = async (idea: string) => {
-  const response = await axios.post(`${API_URL}/analyze-idea`, { idea });
+export const analyzeIdea = async (idea: string, config?: SimulationConfig) => {
+  const response = await axios.post(`${API_URL}/analyze-idea`, { idea, config });
   return response.data;
 };
 
-export const generateAudience = async (ideaId: string) => {
-  const response = await axios.post(`${API_URL}/generate-audience`, { ideaId });
+export const generateAudience = async (ideaId: string, config?: SimulationConfig) => {
+  const response = await axios.post(`${API_URL}/generate-audience`, { ideaId, config });
   return response.data;
 };
 
-export const simulate = async (ideaId: string) => {
-  const response = await axios.post(`${API_URL}/simulate`, { ideaId });
+export const simulate = async (ideaId: string, config?: SimulationConfig) => {
+  const response = await axios.post(`${API_URL}/simulate`, { ideaId, config });
   return response.data;
 };
 
-export const generateReport = async (ideaId: string) => {
-  const response = await axios.post(`${API_URL}/generate-report`, { ideaId });
+export const generateReport = async (ideaId: string, config?: SimulationConfig) => {
+  const response = await axios.post(`${API_URL}/generate-report`, { ideaId, config });
   return response.data;
 };
 

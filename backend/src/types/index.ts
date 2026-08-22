@@ -1,5 +1,17 @@
 // TypeScript Types for Synthetic Audience
 
+export interface SimulationConfig {
+  lens: 'market_fit' | 'revenue' | 'growth' | 'risk' | 'ux';
+  depth: 'quick' | 'standard' | 'deep';
+  region: 'global' | 'north_america' | 'europe' | 'south_asia' | 'east_asia' | 'latam' | 'mena' | 'africa';
+}
+
+export const DEFAULT_CONFIG: SimulationConfig = {
+  lens: 'market_fit',
+  depth: 'standard',
+  region: 'global'
+};
+
 export interface AudienceSegment {
   name: string;
   count: number;
@@ -24,6 +36,7 @@ export interface Idea {
   id: string;
   rawText: string;
   analysis?: IdeaAnalysis;
+  config?: SimulationConfig;
   createdAt: Date;
 }
 

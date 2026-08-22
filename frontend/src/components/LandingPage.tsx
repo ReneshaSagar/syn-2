@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History } from 'lucide-react';
-import { fetchHistory } from '../services/api';
+import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History, Settings } from 'lucide-react';
+import { fetchHistory, SimulationConfig, DEFAULT_CONFIG } from '../services/api';
 
 interface LandingPageProps {
-  onSubmitIdea: (idea: string) => void;
+  onSubmitIdea: (idea: string, config: SimulationConfig) => void;
   onLoadHistory: (ideaId: string) => void;
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHistory }) => {
   const [idea, setIdea] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [config, setConfig] = useState<SimulationConfig>(DEFAULT_CONFIG);
   const [history, setHistory] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -25,7 +27,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
     e.preventDefault();
     if (idea.trim()) {
       setIsFocused(false);
-      onSubmitIdea(idea);
+      setShowSettings(false);
+      onSubmitIdea(idea, config);
     }
   };
 
@@ -131,7 +134,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-[#111] shadow-sm border border-framer-border dark:border-[#222] text-sm font-medium text-gray-600 dark:text-gray-300 mb-4 transition-colors duration-500 relative">
               <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>✨ Meet your instant R&D team</span>
+              <span>Meet your instant R&D team</span>
             </div>
 
             <h1 className="text-6xl md:text-8xl font-semibold tracking-tight text-framer-text dark:text-white leading-[1.1] transition-colors duration-500 relative">
@@ -146,22 +149,110 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
               onSubmit={handleSubmit} 
               className="mt-16 w-full max-w-4xl mx-auto relative z-50"
               animate={{
-                scale: isFocused ? 1.02 : 1,
-                y: isFocused ? -20 : 0,
+                scale: (isFocused || showSettings) ? 1.02 : 1,
+                y: (isFocused || showSettings) ? -20 : 0,
               }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
             >
-              <div className={`flex flex-col items-stretch gap-3 bg-white dark:bg-[#0a0a0a] border border-framer-border dark:border-[#333] rounded-[2rem] p-3 transition-all duration-500 ${isFocused ? 'shadow-2xl ring-4 ring-blue-500/20' : 'shadow-framer dark:shadow-none hover:shadow-framer-hover'}`}>
+              <div className={`flex flex-col items-stretch gap-3 bg-white dark:bg-[#0a0a0a] border border-framer-border dark:border-[#333] rounded-[2rem] p-3 transition-all duration-500 ${(isFocused || showSettings) ? 'shadow-2xl ring-4 ring-blue-500/20' : 'shadow-framer dark:shadow-none hover:shadow-framer-hover'}`}>
                 <textarea
                   ref={textareaRef}
                   value={idea}
                   onChange={handleInput}
-                  onFocus={() => setIsFocused(true)}
+                  onFocus={() => { setIsFocused(true); setShowSettings(true); }}
                   placeholder="Describe your startup, product, or feature concept in detail..."
                   className="w-full bg-transparent text-framer-text dark:text-white placeholder-gray-400 dark:placeholder-gray-600 p-4 text-xl resize-none focus:outline-none min-h-[60px]"
                   style={{ overflowY: idea.length > 0 && textareaRef.current && textareaRef.current.scrollHeight > 200 ? 'auto' : 'hidden' }}
                 />
+                
+                <AnimatePresence>
+                  {showSettings && (
+                    <motion.div 
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="px-4 pb-2 flex flex-col gap-4 overflow-hidden border-t border-framer-border dark:border-[#222] pt-4 mt-2"
+                    >
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Priority Analysis Lens</label>
+                        <div className="flex flex-wrap gap-2">
+                          {[
+                            { id: 'market_fit', icon: '🎯', label: 'Market Fit' },
+                            { id: 'revenue', icon: '💰', label: 'Revenue' },
+                            { id: 'growth', icon: '🚀', label: 'Growth' },
+                            { id: 'risk', icon: '🛡️', label: 'Risk' },
+                            { id: 'ux', icon: '🧑‍🤝‍🧑', label: 'UX' }
+                          ].map(lens => (
+                            <button
+                              key={lens.id}
+                              type="button"
+                              onClick={() => setConfig(prev => ({ ...prev, lens: lens.id as any }))}
+                              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all flex items-center gap-1.5 ${
+                                config.lens === lens.id 
+                                  ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300 ring-2 ring-blue-500/50' 
+                                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:text-gray-400 dark:hover:bg-[#333]'
+                              }`}
+                            >
+                              <span>{lens.icon}</span> {lens.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Simulation Depth</label>
+                          <div className="flex bg-gray-100 dark:bg-[#1a1a1a] p-1 rounded-lg">
+                            {['quick', 'standard', 'deep'].map(depth => (
+                              <button
+                                key={depth}
+                                type="button"
+                                onClick={() => setConfig(prev => ({ ...prev, depth: depth as any }))}
+                                className={`flex-1 px-2 py-1.5 rounded-md text-xs font-medium capitalize transition-all ${
+                                  config.depth === depth 
+                                    ? 'bg-white dark:bg-[#333] text-black dark:text-white shadow-sm' 
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                }`}
+                              >
+                                {depth}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 block">Target Region</label>
+                          <select 
+                            value={config.region}
+                            onChange={(e) => setConfig(prev => ({ ...prev, region: e.target.value as any }))}
+                            className="w-full bg-gray-100 dark:bg-[#1a1a1a] text-sm text-gray-700 dark:text-gray-300 border-none rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
+                          >
+                            <option value="global">🌍 Global</option>
+                            <option value="north_america">🇺🇸 North America</option>
+                            <option value="europe">🇪🇺 Europe</option>
+                            <option value="south_asia">🇮🇳 South Asia</option>
+                            <option value="east_asia">🇯🇵 East Asia</option>
+                            <option value="latam">🇧🇷 Latin America</option>
+                            <option value="mena">🇦🇪 MENA</option>
+                            <option value="africa">🇿🇦 Africa</option>
+                          </select>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
                 <div className="flex justify-end pr-2 pb-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowSettings(!showSettings);
+                    }}
+                    className={`p-4 rounded-full transition-colors flex items-center justify-center shrink-0 ${showSettings ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-[#1a1a1a] dark:text-gray-400 dark:hover:bg-[#333]'}`}
+                    title="R&D Settings"
+                  >
+                    <Settings className="w-6 h-6" />
+                  </button>
                   <button
                     type="button"
                     onClick={(e) => {
@@ -172,7 +263,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                       recognition.continuous = false;
                       recognition.interimResults = false;
                       recognition.lang = navigator.language || 'en-US';
-                      recognition.onstart = () => setIsFocused(true);
+                      recognition.onstart = () => { setIsFocused(true); setShowSettings(true); };
                       recognition.onresult = (event: any) => {
                         const transcript = event.results[0][0].transcript;
                         setIdea(prev => prev ? prev + ' ' + transcript : transcript);
