@@ -911,6 +911,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                       const recognition = new SpeechRecognition();
                       recognition.continuous = false;
                       recognition.interimResults = false;
+                      recognition.lang = navigator.language || 'en-US';
                       recognition.onresult = (event: any) => {
                         const transcript = event.results[0][0].transcript;
                         setBrainstormInput(prev => prev ? prev + ' ' + transcript : transcript);

@@ -82,6 +82,7 @@ export const llmService = {
             finalSystemInstruction += '\n\nYour JSON MUST strictly conform to the following JSON schema structure. Do not wrap the JSON in markdown code blocks, just return the raw JSON:\n' + JSON.stringify(responseSchema, null, 2);
           }
         }
+        finalSystemInstruction += '\n\nMULTILINGUAL SUPPORT: You must detect the language of the user\'s input/idea. ALL your generated text, analysis, reports, and string values in the JSON MUST be written in the EXACT SAME LANGUAGE as the user\'s input.';
 
         const response = await openai!.chat.completions.create({
           model: modelId,
@@ -146,10 +147,11 @@ export const llmService = {
 
     try {
       return await retryWithBackoff(async () => {
+        const finalSystemInstruction = systemInstruction + '\n\nMULTILINGUAL SUPPORT: You must detect the language of the user\'s input/idea. ALL your generated text and markdown MUST be written in the EXACT SAME LANGUAGE as the user\'s input.';
         const response = await openai!.chat.completions.create({
           model: modelId,
           messages: [
-            { role: 'system', content: systemInstruction },
+            { role: 'system', content: finalSystemInstruction },
             { role: 'user', content: userPrompt }
           ],
           temperature: 0.7,
@@ -177,8 +179,9 @@ export const llmService = {
 
     try {
       return await retryWithBackoff(async () => {
+        const finalSystemInstruction = systemInstruction + '\n\nMULTILINGUAL SUPPORT: You must detect the language of the user\'s input/messages. ALL your responses MUST be written in the EXACT SAME LANGUAGE as the user\'s input.';
         const fullMessages: any[] = [
-          { role: 'system', content: systemInstruction },
+          { role: 'system', content: finalSystemInstruction },
           ...messages
         ];
 

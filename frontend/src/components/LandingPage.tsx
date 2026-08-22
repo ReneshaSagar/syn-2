@@ -171,6 +171,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                       const recognition = new SpeechRecognition();
                       recognition.continuous = false;
                       recognition.interimResults = false;
+                      recognition.lang = navigator.language || 'en-US';
                       recognition.onstart = () => setIsFocused(true);
                       recognition.onresult = (event: any) => {
                         const transcript = event.results[0][0].transcript;
