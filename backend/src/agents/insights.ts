@@ -57,7 +57,7 @@ export const insightsAgent = {
       
       computedSegments.push({
         segmentName,
-        count: sims.length,
+        personaCount: sims.length,
         avgInterest: sumInterest / sims.length,
         avgExcitement: sumExcitement / sims.length,
         wouldTryPercent: (wouldTryCount / sims.length) * 100,

@@ -30,6 +30,7 @@ export interface IdeaAnalysis {
   audienceComposition: AudienceSegment[];
   experts: string[];
   summary: string;
+  config?: SimulationConfig;
 }
 
 export interface Idea {
