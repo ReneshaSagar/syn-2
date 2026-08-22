@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History, Settings } from 'lucide-react';
+import { ArrowRight, Sparkles, LayoutDashboard, Users, FileText, ChevronDown, Clock, PanelLeftClose, PanelLeftOpen, History, Settings, Target, Banknote, Rocket, ShieldAlert } from 'lucide-react';
 import { fetchHistory, type SimulationConfig, DEFAULT_CONFIG } from '../services/api';
 
 interface LandingPageProps {
@@ -181,25 +181,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                             <label className="text-[10px] font-bold uppercase tracking-widest text-gray-500 dark:text-gray-500">Analysis Lens</label>
                             <div className="flex flex-wrap gap-2">
                               {[
-                                { id: 'market_fit', icon: '🎯', label: 'Market Fit' },
-                                { id: 'revenue', icon: '💰', label: 'Revenue' },
-                                { id: 'growth', icon: '🚀', label: 'Growth' },
-                                { id: 'risk', icon: '🛡️', label: 'Risk' },
-                                { id: 'ux', icon: '🧑‍🤝‍🧑', label: 'UX' }
-                              ].map(lens => (
-                                <button
-                                  key={lens.id}
-                                  type="button"
-                                  onClick={() => setConfig(prev => ({ ...prev, lens: lens.id as any }))}
-                                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
-                                    config.lens === lens.id 
-                                      ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-sm' 
-                                      : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-[#0a0a0a] dark:text-gray-400 dark:border-[#333] dark:hover:bg-[#111]'
-                                  }`}
-                                >
-                                  <span>{lens.icon}</span> {lens.label}
-                                </button>
-                              ))}
+                                { id: 'market_fit', icon: Target, label: 'Market Fit' },
+                                { id: 'revenue', icon: Banknote, label: 'Revenue' },
+                                { id: 'growth', icon: Rocket, label: 'Growth' },
+                                { id: 'risk', icon: ShieldAlert, label: 'Risk' },
+                                { id: 'ux', icon: Users, label: 'UX' }
+                              ].map(lens => {
+                                const Icon = lens.icon;
+                                return (
+                                  <button
+                                    key={lens.id}
+                                    type="button"
+                                    onClick={() => setConfig(prev => ({ ...prev, lens: lens.id as any }))}
+                                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border flex items-center gap-1.5 ${
+                                      config.lens === lens.id 
+                                        ? 'bg-black text-white border-black dark:bg-white dark:text-black dark:border-white shadow-sm' 
+                                        : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50 dark:bg-[#0a0a0a] dark:text-gray-400 dark:border-[#333] dark:hover:bg-[#111]'
+                                    }`}
+                                  >
+                                    <Icon className="w-3.5 h-3.5" /> {lens.label}
+                                  </button>
+                                );
+                              })}
                             </div>
                           </div>
 
@@ -235,14 +238,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onSubmitIdea, onLoadHi
                                 onChange={(e) => setConfig(prev => ({ ...prev, region: e.target.value as any }))}
                                 className="w-full bg-white dark:bg-[#0a0a0a] text-sm text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-[#333] rounded-xl p-2.5 focus:ring-2 focus:ring-black/5 dark:focus:ring-white/10 outline-none cursor-pointer appearance-none transition-colors"
                               >
-                                <option value="global">🌍 Global Audience</option>
-                                <option value="north_america">🇺🇸 North America</option>
-                                <option value="europe">🇪🇺 Europe</option>
-                                <option value="south_asia">🇮🇳 South Asia</option>
-                                <option value="east_asia">🇯🇵 East Asia</option>
-                                <option value="latam">🇧🇷 Latin America</option>
-                                <option value="mena">🇦🇪 MENA</option>
-                                <option value="africa">🇿🇦 Africa</option>
+                                <option value="global">Global Audience</option>
+                                <option value="north_america">North America</option>
+                                <option value="europe">Europe</option>
+                                <option value="south_asia">South Asia</option>
+                                <option value="east_asia">East Asia</option>
+                                <option value="latam">Latin America</option>
+                                <option value="mena">MENA</option>
+                                <option value="africa">Africa</option>
                               </select>
                               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                                 <ChevronDown className="w-4 h-4" />
