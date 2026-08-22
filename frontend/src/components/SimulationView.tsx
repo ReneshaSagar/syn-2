@@ -121,7 +121,7 @@ const SpeechBubble: React.FC<{ text: string, emoji?: string, isDone: boolean, po
       transition={{ type: 'spring', damping: 15, stiffness: 300 }}
       className={`absolute ${position === 'top' ? 'bottom-full mb-2' : 'top-full mt-2'} left-1/2 -translate-x-1/2 z-40 pointer-events-none`}
     >
-      <div className={`relative px-3 py-2 rounded-lg text-center shadow-lg max-w-[140px] md:max-w-[180px] ${
+      <div className={`relative px-3 py-2 rounded-lg text-center shadow-lg min-w-[60px] max-w-[200px] md:max-w-[260px] ${
         isDone 
           ? 'bg-green-50 dark:bg-green-900/60 border-2 border-green-400 dark:border-green-600' 
           : 'bg-white dark:bg-[#1a1a1a] border-2 border-gray-300 dark:border-[#555] min-w-[32px]'
@@ -259,14 +259,16 @@ const FocusGroupRoom: React.FC<{ personas: Persona[], simulations: Simulation[],
         </p>
       </div>
 
-      <div className="relative w-full max-w-[1200px] aspect-[16/9] rounded-xl overflow-hidden border-4 border-[#2C2016] shadow-2xl" style={{ imageRendering: 'auto' }}>
-        <img
-          src="/assets/room.jpg"
-          alt="Focus Group Room"
-          className="absolute inset-0 w-full h-full object-cover"
-          style={{ imageRendering: 'auto' }}
-          draggable={false}
-        />
+      <div className="relative w-full max-w-[1200px] aspect-[16/9] rounded-xl border-4 border-[#2C2016] shadow-2xl" style={{ imageRendering: 'auto' }}>
+        <div className="absolute inset-0 rounded-lg overflow-hidden">
+          <img
+            src="/assets/room.jpg"
+            alt="Focus Group Room"
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ imageRendering: 'auto' }}
+            draggable={false}
+          />
+        </div>
 
         <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{
           background: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.3) 2px, rgba(0,0,0,0.3) 4px)',

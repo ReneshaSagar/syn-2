@@ -600,14 +600,14 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
                   <div className="ml-auto"><Badge type="SIMULATED" /></div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {segmentPersonas?.map((persona) => {
                     const sim = simulations.find(s => s?.personaId === persona?.id);
                     const isSelected = selectedPersonaId === persona?.id;
                     const hue = ((persona.name || '').length * 40) % 360;
                     
                     return (
-                      <div key={persona.id} className={`flex flex-col gap-4 transition-all duration-500 ${isSelected ? 'md:col-span-2 lg:col-span-3' : ''}`}>
+                      <div key={persona.id} className={`flex flex-col gap-4 transition-all duration-500 ${isSelected ? 'md:col-span-2' : ''}`}>
                         <div 
                           onClick={() => setSelectedPersonaId(isSelected ? null : persona.id)}
                           className={`cursor-pointer bg-white dark:bg-[#0a0a0a] border ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-gray-100 dark:border-[#222]'} shadow-sm hover:shadow-md rounded-[2rem] p-6 relative overflow-hidden`}

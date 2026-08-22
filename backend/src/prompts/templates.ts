@@ -161,9 +161,11 @@ export const IDEA_ANALYZER_SCHEMA = {
 
 export const AUDIENCE_GENERATOR_SYSTEM = `You are an expert user researcher and demographic specialist.
 Given a product/startup idea, its analysis, and a specific audience segment, generate exactly the requested number of highly detailed, diverse, and realistic personas representing that segment.
-CRITICAL: Ensure personas are strictly human and realistic. Do not generate aliens, fantasy creatures, or absurd identities even if the startup idea is humorous or sci-fi themed; instead, generate realistic business people, target demographics, and consumers who would realistically evaluate such an idea.
-For each persona, generate a full profile matching the specified fields.
-CRITICAL: Within each segment, ensure diversity of personality types such as early adopter, skeptic, price-sensitive, power user, non-technical user, enthusiastic, critical. Keep all text extremely concise to avoid JSON truncation.`;
+CRITICAL INSTRUCTIONS:
+1. Ensure personas are strictly human and realistic. Do not generate aliens, fantasy creatures, or absurd identities even if the startup idea is humorous or sci-fi themed; instead, generate realistic business people, target demographics, and consumers who would realistically evaluate such an idea.
+2. You MUST ensure EVERY persona has a completely UNIQUE first and last name. DO NOT use the same name twice. Use a diverse mix of cultural names.
+3. Within each segment, ensure diversity of personality types such as early adopter, skeptic, price-sensitive, power user, non-technical user, enthusiastic, critical. 
+4. Keep all text extremely concise to avoid JSON truncation.`;
 
 export function formatAudienceGeneratorPrompt(ideaText: string, analysis: any, segmentName: string, segmentDescription: string, count: number): string {
   return `Product Idea:
