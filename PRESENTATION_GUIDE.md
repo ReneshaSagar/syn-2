@@ -65,3 +65,14 @@ We use a LangGraph-inspired pipeline where distinct AI agents run in parallel an
 - **Interactive Persona Debates:** Unlike static AI reports, we allow the founder to pit two specific personas against each other in a live chatroom. The founder can even interject and argue on behalf of either side to dynamically stress-test specific objections before generating a final moderation summary.
 - **Full Historical Persistence:** Every competitor (with live URLs), Red Team attack, and chat conversation is preserved in the database. Users can switch tabs or reload past ideas without losing their chat memory with the Lead Researcher.
 - **Live Web Research:** We don't just hallucinate competitors; we use Tavily to search the live web.
+
+---
+
+## 6. Testing & Quality Assurance
+The project includes a comprehensive end-to-end test suite (`backend/scratch/comprehensive_test.ts`) that verifies all 18 API endpoints, including:
+- **Core Pipeline:** Idea analysis, audience generation, simulation, insights report, and Red Team analysis.
+- **Interactive Features:** Real-time persona chat, General Analyst chat, debate saving, and pivot summarizing.
+- **Asset Generation:** Trust strategy assets and platform-specific launch drafts (Reddit/HN).
+- **State Persistence:** Saving and loading full idea states, including simulations and history.
+
+The test suite ensures the entire LangGraph workflow executes reliably in under 90 seconds, with appropriate mock fallbacks if external APIs are unavailable.
