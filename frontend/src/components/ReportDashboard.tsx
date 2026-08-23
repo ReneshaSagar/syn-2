@@ -172,6 +172,7 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
   const [debateTopic, setDebateTopic] = useState<string>(report?.debateMemory?.topic || 'the overall viability and potential of this idea');
   const [debateMessages, setDebateMessages] = useState<{senderId: string, content: string}[]>(report?.debateMemory?.messages || []);
   const [isDebateRunning, setIsDebateRunning] = useState(false);
+  const [debateConclusion, setDebateConclusion] = useState<string | null>(report?.debateMemory?.conclusion || null);
 
   useEffect(() => {
     if (report?.debateMemory) {
@@ -179,11 +180,13 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
       setDebatePersona2Id(report.debateMemory.persona2Id || defaultLowest || '');
       setDebateTopic(report.debateMemory.topic || 'the overall viability and potential of this idea');
       setDebateMessages(report.debateMemory.messages || []);
+      setDebateConclusion(report.debateMemory.conclusion || null);
     } else {
       setDebatePersona1Id(defaultHighest || '');
       setDebatePersona2Id(defaultLowest || '');
       setDebateTopic('the overall viability and potential of this idea');
       setDebateMessages([]);
+      setDebateConclusion(null);
     }
   }, [report?.ideaId, report?.debateMemory, defaultHighest, defaultLowest]);
 

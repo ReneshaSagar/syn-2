@@ -1,13 +1,10 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import * as dotenv from 'dotenv';
+import 'dotenv/config';
 import analysisRouter from './routes/analysis';
 import chatRouter from './routes/chat';
 import assetsRouter from './routes/assets';
 import pivotRouter from './routes/pivot';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
