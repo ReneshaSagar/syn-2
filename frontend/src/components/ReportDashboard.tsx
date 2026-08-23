@@ -468,10 +468,40 @@ export const ReportDashboard: React.FC<ReportDashboardProps> = ({
     }, 500);
   };
 
-  let interestScore = report.insights?.overallInterestScore || 0;
-  if (interestScore > 0 && interestScore <= 10) {
-    interestScore *= 10;
-  }
+  const dynamicScores = useMemo(() => {
+    if (!simulations || simulations.length === 0) return { interestScore: report.insights?.overallInterestScore || 0, adoptionProb: report.insights?.adoptionProbability || 0 };
+    
+    const getWeight = (segment: string) => {
+      if (!analysis?.config?.segmentPriority || analysis.config.segmentPriority.length === 0) return 1;
+      const index = analysis.config.segmentPriority.indexOf(segment);
+      if (index === 0) return 3;
+      if (index === 1) return 2;
+      return 1;
+    };
+
+    let weightedInterestSum = 0;
+    let weightedWouldPaySum = 0;
+    let totalWeight = 0;
+
+    simulations.forEach(sim => {
+      const persona = personas.find(p => p.id === sim.personaId);
+      const weight = persona ? getWeight(persona.segment) : 1;
+      
+      weightedInterestSum += (sim.result.excitementScore || 0) * weight;
+      if (sim.result.wouldPay) weightedWouldPaySum += weight;
+      totalWeight += weight;
+    });
+    
+    let score = totalWeight > 0 ? Math.round((weightedInterestSum / totalWeight) * 10) : 0;
+    if (score > 0 && score <= 10) score *= 10;
+    
+    return {
+      interestScore: score,
+      adoptionProb: totalWeight > 0 ? Math.round((weightedWouldPaySum / totalWeight) * 100) : 0
+    };
+  }, [simulations, report.insights, analysis?.config?.segmentPriority, personas]);
+
+  const interestScore = dynamicScores.interestScore;
 
   const scoreData = [
     { name: 'Interest', value: interestScore },

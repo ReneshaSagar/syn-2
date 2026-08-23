@@ -69,14 +69,29 @@ export const insightsAgent = {
       });
     }
 
+    const getWeight = (segment: string) => {
+      if (!config?.segmentPriority || config.segmentPriority.length === 0) return 1;
+      const index = config.segmentPriority.indexOf(segment);
+      if (index === 0) return 3;
+      if (index === 1) return 2;
+      return 1;
+    };
+
     let totalInterest = 0;
     let totalWouldPayCount = 0;
+    let totalWeight = 0;
+
     for (const sim of simulations) {
-      totalInterest += sim.result.interestScore || 0;
-      if (sim.result.wouldPay) totalWouldPayCount++;
+      const persona = personas.find(p => p.id === sim.personaId);
+      const weight = persona ? getWeight(persona.segment) : 1;
+      
+      totalInterest += (sim.result.interestScore || 0) * weight;
+      if (sim.result.wouldPay) totalWouldPayCount += weight;
+      totalWeight += weight;
     }
-    const realOverallInterestScore = Math.round((totalInterest / simulations.length) * 10);
-    const realAdoptionProbability = Math.round((totalWouldPayCount / simulations.length) * 100);
+    
+    const realOverallInterestScore = totalWeight > 0 ? Math.round((totalInterest / totalWeight) * 10) : 0;
+    const realAdoptionProbability = totalWeight > 0 ? Math.round((totalWouldPayCount / totalWeight) * 100) : 0;
 
     const lensInstructions = getLensInstruction(config);
     const systemInstruction = INSIGHT_GENERATOR_SYSTEM + '\n' + lensInstructions;

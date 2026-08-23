@@ -331,25 +331,34 @@ export const dbService = {
     };
 
     if (supabase) {
-      const { error } = await supabase
-        .from('reports')
-        .insert({
-          id,
-          idea_id: ideaId,
-          overall_interest_score: insights.overallInterestScore,
-          adoption_probability: insights.adoptionProbability,
-          top_concerns: insights.topConcerns,
-          top_suggestions: insights.topSuggestions,
-          most_interested_segment: insights.mostInterestedSegment,
-          least_interested_segment: insights.leastInterestedSegment,
-          frequently_asked_questions: insights.frequentlyAskedQuestions,
-          improvement_opportunities: insights.improvementRecommendations,
-          actionable_roadmap: insights.actionableRoadmap,
-          full_report_markdown: fullReportMarkdown
-        });
+      const existing = await supabase.from('reports').select('id').eq('idea_id', ideaId).order('created_at', { ascending: false }).limit(1);
+      
+      const payload = {
+        overall_interest_score: insights.overallInterestScore,
+        adoption_probability: insights.adoptionProbability,
+        top_concerns: insights.topConcerns,
+        top_suggestions: insights.topSuggestions,
+        most_interested_segment: insights.mostInterestedSegment,
+        least_interested_segment: insights.leastInterestedSegment,
+        frequently_asked_questions: insights.frequentlyAskedQuestions,
+        improvement_opportunities: insights.improvementRecommendations,
+        actionable_roadmap: insights.actionableRoadmap,
+        full_report_markdown: fullReportMarkdown
+      };
 
-      if (!error) return report;
-      console.error('Supabase saveReport error:', error);
+      let error;
+      if (existing.data && existing.data.length > 0) {
+        const res = await supabase.from('reports').update(payload).eq('id', existing.data[0].id);
+        error = res.error;
+        report.id = existing.data[0].id; // Keep same ID
+      } else {
+        const res = await supabase.from('reports').insert({ id, idea_id: ideaId, ...payload });
+        error = res.error;
+      }
+
+      if (error) {
+        console.error('Supabase saveReport error:', error);
+      }
     }
 
     localStore.data.reports[ideaId] = report;
@@ -357,18 +366,18 @@ export const dbService = {
     return report;
   },
 
-  /**
-   * Get report for an idea
-   */
   async getReport(ideaId: string): Promise<Report | null> {
     if (supabase) {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from('reports')
         .select('*')
         .eq('idea_id', ideaId)
-        .single();
+        .order('created_at', { ascending: false })
+        .limit(1);
 
-      if (!error && data) {
+      if (!error && rows && rows.length > 0) {
+        const data = rows[0];
+        const localReport = localStore.data.reports[ideaId] || {} as any;
         return {
           id: data.id,
           ideaId: data.idea_id,
@@ -384,7 +393,13 @@ export const dbService = {
             actionableRoadmap: data.actionable_roadmap || []
           } as any,
           fullReportMarkdown: data.full_report_markdown,
-          createdAt: new Date(data.created_at)
+          createdAt: new Date(data.created_at),
+          chatMemory: localReport.chatMemory,
+          debateMemory: localReport.debateMemory,
+          versionHistory: localReport.versionHistory,
+          redTeamReport: localReport.redTeamReport,
+          competitors: localReport.competitors,
+          communityRecommendations: localReport.communityRecommendations
         } as any;
       }
     }
