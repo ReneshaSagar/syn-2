@@ -139,7 +139,7 @@ export const llmService = {
   async callLlmText(
     systemInstruction: string,
     userPrompt: string,
-    modelId: string = 'anthropic/claude-3-5-sonnet-20240620'
+    modelId: string = 'openai/gpt-4o'
   ): Promise<string> {
     if (!openai) {
       return this.generateMockTextReport(userPrompt);

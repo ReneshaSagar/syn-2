@@ -22,28 +22,36 @@ Return ONLY the Markdown content for the asset. Do not include any meta-commenta
 
     const userPrompt = `Generate the asset to address this: "${concernOrRecommendation}"`;
 
-    return await llmService.callLlmText(systemInstruction, userPrompt, 'anthropic/claude-3-5-sonnet-20240620');
+    return await llmService.callLlmText(systemInstruction, userPrompt, 'openai/gpt-4o');
   },
 
   async generateDraft(ideaId: string, platform: string, community: string): Promise<string> {
     const idea = await dbService.getIdea(ideaId);
     if (!idea) throw new Error('Idea not found');
 
-    const systemInstruction = `You are a real, authentic startup founder. You hate corporate jargon and "AI-speak".
-The user has a startup idea:
+    const systemInstruction = `You are an authentic, scrappy startup founder pitching your idea to a community to get early validation and feedback.
+    
+Your startup idea:
 "${idea.rawText}"
+
+Your value proposition:
+"${idea.analysis?.keyValueProposition || 'Not available'}"
 
 Your task is to write a draft post to validate this idea on ${platform}, specifically targeting the ${community} community.
 
 CRITICAL RULES:
-1) SOUND HUMAN. Do not sound like a marketer, an AI, or a growth hacker. Be humble, conversational, and direct. Use phrases like "Hey guys, working on X..." or "Would love your brutally honest feedback."
-2) PERFECTLY MATCH THE PLATFORM. If it's Reddit, format it like a text post (no hashtags, self-aware tone). If it's X/Twitter, write a short, punchy tweet thread. If it's Hacker News, write a plain-text "Show HN:" style post.
-3) Be concise. Nobody reads massive walls of text.
-4) Ask a specific question to spark engagement.
-5) DO NOT include any AI pleasantries like "Here is your draft". Return ONLY the post content.`;
+1) PITCH, DO NOT SUMMARIZE. Do not talk about "scores", "simulation", "personas", or "research". You are pitching the actual product idea to real humans to see if they'd use it.
+2) SOUND HUMAN. Do not sound like a marketer, an AI, or a growth hacker. Be humble, conversational, and direct.
+3) ZERO BUZZWORDS. Ban the words: revolutionize, game-changer, robust, delve, comprehensive, cutting-edge, ultimate, synergy, unlock.
+4) PERFECTLY MATCH THE PLATFORM. 
+   - If Reddit: Format as a genuine text post. Be self-aware. No hashtags.
+   - If Twitter/X: Short, punchy thread.
+   - If Hacker News: "Show HN:" style, highly technical and plain text.
+5) Keep it short and readable. End with a specific question asking for brutal, honest feedback.
+6) OUTPUT ONLY THE POST CONTENT. No intro like "Here is the draft:". No markdown code blocks surrounding the text unless it's for formatting the post itself.`;
 
     const userPrompt = `Write the draft for ${platform} targeting ${community}.`;
 
-    return await llmService.callLlmText(systemInstruction, userPrompt, 'anthropic/claude-3-5-sonnet-20240620');
+    return await llmService.callLlmText(systemInstruction, userPrompt, 'openai/gpt-4o');
   }
 };
